@@ -1,0 +1,12 @@
+{
+  "name": "plow-command",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plow Command, Titan Alaska's plow truck crew app",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\" && playwright test",
+    "test:unit": "node --test \"test/*.test.js\""
+  },
+  "license": "UNLICENSED",
+  "devDependencies": { "@playwright/test": "^1.63.0" }
+}

@@ -1,0 +1,65 @@
+// The Share button (Matt, 10/5/26): a worker texts the app to a new guy. A saved
+// QR once sent someone to the wrong place, so what is shared is ALWAYS the one
+// fixed address, never the page the sharer happens to be on.
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const SnowShare = require('../lib/share.js');
+
+// Plow Command's own address (spec section 1, final wave C1): never the Sidewalk app's, whose path is Shovel Command's.
+const URL = 'https://titanalaska.github.io/Plow/';
+
+function nav(o) {
+  const calls = { share: [], copy: [] };
+  const n = {};
+  if (o.share) n.share = async (d) => { calls.share.push(d); return o.share(d); };
+  if (o.copy) n.clipboard = { writeText: async (t) => { calls.copy.push(t); return o.copy(t); } };
+  return { n, calls };
+}
+const abort = () => { const e = new Error('cancelled'); e.name = 'AbortError'; throw e; };
+const denied = () => { const e = new Error('no'); e.name = 'NotAllowedError'; throw e; };
+
+test('the address is the fixed app address, and the message says how to get in', () => {
+  assert.equal(SnowShare.APP_URL, URL);
+  const m = SnowShare.message();
+  // Worked on paper: the first clause names the app (Plow Command, the Titan plow truck app.); everything after it is the
+  // tail the share text already had: how to install, then name and PIN, or Type your name for a new person.
+  assert.equal(m, 'Plow Command, the Titan plow truck app. Open this link on your phone, then Install it ' +
+    "(or Add to Home screen). Pick your name and enter your PIN, or tap Type your name if you're new.");
+  assert.doesNotMatch(m, /Snow Crew|sidewalk/i);
+  assert.match(m, /Type your name/); // a new guy is not on the name list (10/20/26)
+  assert.ok(!m.includes('http'), 'the link travels as the url, not inside the text');
+});
+
+test('with a share sheet: it opens with the fixed address, and nothing is copied', async () => {
+  const { n, calls } = nav({ share: () => {}, copy: () => {} });
+  assert.equal(await SnowShare.share(n), 'shared');
+  assert.equal(calls.share.length, 1);
+  assert.equal(calls.share[0].url, URL);
+  assert.equal(calls.share[0].title, 'Plow Command'); // the sheet's title is the app's name
+  assert.equal(calls.share[0].text, SnowShare.message());
+  assert.equal(calls.copy.length, 0);
+});
+
+test('backing out of the share sheet is not a failure: nothing is copied', async () => {
+  const { n, calls } = nav({ share: abort, copy: () => {} });
+  assert.equal(await SnowShare.share(n), 'cancelled');
+  assert.equal(calls.copy.length, 0);
+});
+
+test('a share sheet that refuses falls back to copying the message and the address', async () => {
+  const { n, calls } = nav({ share: denied, copy: () => {} });
+  assert.equal(await SnowShare.share(n), 'copied');
+  assert.equal(calls.copy[0], SnowShare.message() + ' ' + URL);
+});
+
+test('no share sheet (a laptop browser): the message and the address are copied', async () => {
+  const { n, calls } = nav({ copy: () => {} });
+  assert.equal(await SnowShare.share(n), 'copied');
+  assert.equal(calls.copy[0], SnowShare.message() + ' ' + URL);
+});
+
+test('nothing works: it says so, so the page can show the link to copy by hand', async () => {
+  assert.equal(await SnowShare.share(nav({ copy: () => { throw new Error('blocked'); } }).n), 'show');
+  assert.equal(await SnowShare.share(nav({}).n), 'show');
+  assert.equal(await SnowShare.share(undefined), 'show');
+});

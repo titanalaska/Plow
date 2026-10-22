@@ -1,0 +1,327 @@
+:root{color-scheme:light dark}
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1b;--muted:#6b6a66;--line:#dedcd6;--accent:#1f5fa8;--on-accent:#fff;--warn:#b3261e;--warn-bg:#fbe9e7;--chip:#eef1f5;--amber:#b36b00;--amber-bg:#fff0d1}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141414;--card:#1e1e1e;--ink:#eee;--muted:#a3a3a3;--line:#333;--accent:#7fb0ea;--on-accent:#0b1b2e;--warn:#ff8a80;--warn-bg:#3a1d1b;--chip:#2a2d33;--amber:#ffc266;--amber-bg:#3d2c0c}}
+:root[data-theme="dark"]{--bg:#141414;--card:#1e1e1e;--ink:#eee;--muted:#a3a3a3;--line:#333;--accent:#7fb0ea;--on-accent:#0b1b2e;--warn:#ff8a80;--warn-bg:#3a1d1b;--chip:#2a2d33;--amber:#ffc266;--amber-bg:#3d2c0c}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:140px}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:8px;align-items:center}
+header h1{font-size:18px;margin:0;flex:1}
+.badge{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--chip);color:var(--muted)}
+.badge:empty{display:none}
+.badge.off{background:var(--warn-bg);color:var(--warn)}
+/* EN / ES, in the header where the crew can reach it (Matt, 10/9/26) */
+.lang-wrap{display:flex;gap:4px}
+.lang-btn{min-height:32px;padding:4px 8px;font-size:12px}
+.lang-btn.on{background:var(--chip);font-weight:600}
+/* A 320 px phone: only the button that switches shows, so the name badge keeps its room over the title */
+@media (max-width:360px){.lang-btn.on{display:none}.lang-btn{padding:4px 5px}}
+main{padding:12px 16px;max-width:720px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:7;display:flex;background:var(--card);border-top:1px solid var(--line)}
+nav button{flex:1;border:0;border-radius:0;background:none;color:var(--muted)}
+nav button[aria-current="page"]{color:var(--accent);font-weight:600}
+button{font:inherit;min-height:44px;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.card h2{margin:0;font-size:17px}
+.sites{color:var(--muted);font-size:13px;margin:2px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--chip);border-radius:24px;padding:4px 8px 4px 4px;min-height:44px;cursor:pointer;border:2px solid transparent}
+.chip.sel{border-color:var(--accent)}
+.chip.off{opacity:.55}
+.chip img,.chip .ph{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--line);flex:none}
+.lead{font-size:11px;color:var(--accent);font-weight:700}
+.q{color:var(--muted);font-size:12px}
+.call{text-decoration:none;font-size:18px;padding:4px}
+.warns{margin:8px 0 0;padding:0;list-style:none}
+.warns li{color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:4px 8px;margin-top:4px;font-size:14px}
+.bar{position:fixed;left:0;right:0;bottom:57px;z-index:6;background:var(--card);border-top:2px solid var(--accent);padding:8px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer}
+.tile img,.tile .ph{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--line)}
+dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100vw - 32px));background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog .in{padding:16px;max-height:85vh;overflow:auto}
+label{display:block;margin:10px 0 4px;font-size:14px;color:var(--muted)}
+label.inline{display:inline-flex;gap:6px;align-items:center;margin-right:14px;color:var(--ink)}
+input,select,textarea{font:inherit;width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+input[type=checkbox]{width:auto}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.muted{color:var(--muted);font-size:14px}
+.err{color:var(--warn)}
+#toast{position:fixed;left:16px;right:16px;bottom:130px;z-index:9;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:8px;display:none}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+th{color:var(--muted);font-weight:500;width:38%}
+/* ---- dressed-up cards, shared by the owner board and the crew view (9/30/26) ---- */
+:root{--lead-bg:#e8f0fb;--ok:#1e7a3c;--ok-bg:#e6f4ea;--pill:#f1efe8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--lead-bg:#1a2a3d;--ok:#7ed69a;--ok-bg:#16301f;--pill:#2c2c2a}}
+:root[data-theme="dark"]{--lead-bg:#1a2a3d;--ok:#7ed69a;--ok-bg:#16301f;--pill:#2c2c2a}
+.card{border-radius:14px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.route-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.route-badge{background:var(--accent);color:var(--on-accent);font-weight:700;font-size:18px;padding:3px 14px;border-radius:999px;letter-spacing:.3px}
+.site-pill{border:1px solid var(--line);background:var(--pill);color:var(--muted);font-size:12px;padding:2px 9px;border-radius:999px}
+.site-pill.cleared{border-color:var(--accent);color:var(--accent)}
+.chip.is-lead{background:var(--lead-bg)}
+.lead-pill{display:inline-block;font-size:11px;font-weight:700;background:var(--accent);color:var(--on-accent);padding:1px 8px;border-radius:999px;vertical-align:1px;margin-left:2px}
+.chip img,.chip .ph{width:40px;height:40px}
+.dropzone{border:2px dashed var(--line);border-radius:12px;padding:14px;text-align:center;color:var(--muted);font-size:14px}
+.heads-up{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.hu-label{font-size:12px;font-weight:600;color:var(--warn);text-transform:uppercase;letter-spacing:.4px}
+.warns li{margin-top:5px}
+/* crew view */
+.crew-head .big{font-size:20px;font-weight:600}
+.banner-stale{background:var(--warn-bg);border-color:var(--warn);color:var(--warn);font-size:15px}
+.crew-empty h2{margin:0 0 4px}
+.person{display:flex;align-items:center;gap:12px;padding:8px;border-radius:12px}
+.person + .person{margin-top:4px}
+.person.is-lead{background:var(--lead-bg)}
+.person .av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--pill);color:var(--muted);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+.pname{flex:1;font-size:17px}
+.callbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--ok);background:var(--ok-bg);color:var(--ok);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:20px;flex:none}
+.crew-nights h2{font-size:15px;color:var(--muted);margin:0 0 6px}
+.nrow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.nrow:first-of-type{border-top:0}
+header h1{font-size:17px;white-space:nowrap}
+header button{min-height:40px;padding:6px 12px;font-size:15px}
+.chip .ph,.tile .ph{display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600;font-size:13px}
+.tile .ph{font-size:28px}
+header button,.badge{white-space:nowrap}
+/* Share joined the top bar (10/5/26): on a small phone the name badge gives way (trimmed with …), never the buttons. */
+header #who{min-width:0;overflow:hidden;text-overflow:ellipsis}
+header button{flex:none}
+
+/* ---- snow app (Foundation) ---- */
+.banner{background:var(--warn-bg);color:var(--warn);padding:8px 16px;font-size:14px;border-bottom:1px solid var(--warn)}
+#tabs button[aria-current="page"]{color:var(--accent);font-weight:600}
+button.small{min-height:36px;padding:4px 10px;font-size:14px;margin-left:auto}
+.route-top .small + .small{margin-left:4px}
+.site-name{font-size:17px;font-weight:600}
+.sitelist{margin:4px 0 0;padding-left:22px}
+.sitelist li{padding:4px 0}
+.sitelist.edit li{display:flex;align-items:center;gap:6px}
+.sitelist.edit li span{flex:1}
+.who-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.who-head h2{margin:0}
+.av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--pill);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+.tile .av{width:100%;height:auto;aspect-ratio:1;border-radius:8px;font-size:28px}
+#signin,#request,#notroster{margin-top:8px}
+/* site maps */
+.row.tight{margin:0 0 0 auto;gap:4px;flex-wrap:nowrap}
+.row.tight .small{margin-left:0}
+.sitelist:not(.edit) li{display:flex;align-items:center;gap:6px}
+.sitelist:not(.edit) li .small{min-height:32px;padding:2px 10px}
+#mapback{margin-left:0}
+#mapbox{position:relative;height:62vh;min-height:320px;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-bottom:12px;background:#20241f}
+#mapwarn{border-radius:8px;margin-bottom:8px;border:1px solid var(--warn)}
+/* the lot under a map opened from the Storm tab: the card is the lot alone, so no rule above it */
+#maplot .walk{border-top:0;padding-top:0}
+.maplegend{position:absolute;left:8px;top:8px;z-index:2;background:rgba(255,255,255,.92);color:#1d1d1b;border-radius:8px;padding:6px 8px;font-size:13px;display:flex;flex-direction:column;gap:2px;pointer-events:none}
+.maplegend span{display:flex;align-items:center;gap:6px}
+.maplegend i,.swatch{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:6px;vertical-align:-2px;flex:none}
+.maplegend i{margin-right:0}
+.stormhint{margin:-4px 0 10px;font-size:15px}
+#zonesheet h2{margin-bottom:6px}
+#zonesheet div{margin-top:4px}
+/* zone editor (Matt) */
+#edbar{margin:0 0 8px}
+.filebtn{display:inline-flex;align-items:center;margin:0;min-height:44px;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font-size:16px}
+.filebtn input{position:absolute;width:1px;height:1px;opacity:0}
+.ztypes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.ztypes button{min-height:56px;border:3px solid var(--zc);font-weight:600}
+.ztypes button[aria-pressed="true"]{background:var(--zc);color:#fff}
+/* The white arrow's button: its white swatch in its dark edge (a casing, as the arrow is drawn). Pressed, it takes
+   the page's ink, so it reads pressed on a light card and on a dark one alike (white on white would not). */
+.ztypes button.edged{box-shadow:0 0 0 2px var(--ze)}
+.ztypes button.edged[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.zone-corner{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #111;box-shadow:0 0 0 2px #fff;cursor:grab}
+#zoneform input:not([type=checkbox]),#zoneform textarea{width:100%;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+/* Phone: a sheet over the bottom; the map shrinks and the page gains room to
+   scroll everything above it. Laptop (700px+): a side panel beside the map. */
+#refpanel{position:fixed;z-index:8;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;
+  left:0;right:0;bottom:57px;height:36vh;border-radius:14px 14px 0 0;overflow:auto}
+#refpanel.min{height:auto;overflow:hidden}
+#refpanel.min img{display:none}
+#refpanel img{width:100%;height:auto;display:block}
+.refhead{display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:13px;color:var(--muted);position:sticky;top:0;background:var(--card)}
+.refhead span{flex:1}
+.refhead .small{margin-left:0}
+body.has-ref{padding-bottom:calc(36vh + 80px)}
+body.has-ref #mapbox{height:40vh}
+body.has-ref.ref-min{padding-bottom:200px}
+body.has-ref.ref-min #mapbox{height:62vh}
+@media (min-width:700px){
+  #refpanel{left:auto;top:58px;bottom:57px;right:0;width:40vw;height:auto;border-radius:14px 0 0 14px}
+  #ref_min{display:none}
+  body.has-ref{padding-bottom:140px}
+  body.has-ref #mapbox{height:62vh}
+  body.has-ref main{margin-right:40vw}
+}
+.photoswitch{position:absolute;right:8px;top:8px;z-index:2;min-height:36px;padding:4px 10px;font-size:13px;background:rgba(255,255,255,.92);color:#1d1d1b;border:1px solid #ccc}
+/* editor bar on the map: turn buttons; while drawing, Move/Add and Delete corner */
+.edfloat{position:absolute;left:8px;bottom:8px;z-index:2;display:flex;gap:6px;flex-wrap:wrap;align-items:center;max-width:calc(100% - 60px)}
+.edfloat button{min-height:40px;padding:4px 12px;font-size:14px;background:rgba(255,255,255,.94);color:#1d1d1b;border:1px solid #bbb}
+#ed_drawctl{display:flex;gap:6px;flex-wrap:wrap}
+#z_mode.on{background:#1f5fa8;color:#fff;border-color:#1f5fa8}
+#z_delcorner:disabled{opacity:.5}
+.zone-corner.sel{background:#d62828;border-color:#fff;width:22px;height:22px}
+/* an arrow's last corner, its head: a tap there turns the arrow around */
+.zone-corner.head{width:24px;height:24px;border-width:5px}
+/* import from Bootprint */
+.bpjob{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-top:6px;text-align:left}
+.bpjob.sel{border:2px solid var(--accent)}
+#bp_sum{margin-top:10px}
+/* Storm tab: drivers tap each lot (10/3/26; the lot, Plow Command 10/21/26). Big buttons: gloves, snow, a phone in one hand. */
+.stormhead{font-weight:700;font-size:17px;padding:10px 14px;border-radius:12px;background:var(--chip);color:var(--muted);margin-bottom:12px}
+.stormhead.open{background:var(--ok-bg);color:var(--ok)}
+.shift-route{font-size:17px;margin:14px 0 8px}
+.walk{padding:10px 0;border-top:1px solid var(--line)}
+.walk-name{font-weight:600;margin-bottom:6px}
+.walk-btns{display:flex;gap:8px;flex-wrap:wrap}
+.walkbtn{flex:1;min-width:84px;min-height:52px;font-weight:600}
+.walkbtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.walkbtn.s-problem[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:var(--bg)}
+.walk.pending .walk-btns{opacity:.55}
+.walk-last{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:14px}
+.walk-note{color:var(--muted)}
+.walk-last .small{margin-left:auto}
+.walk-fail{margin-top:8px;font-size:14px}
+/* The lot: the plow note under the address, and a plowed site fades (what is left stands out down the list). Only its
+   words fade: the name, the plow note and the status line. Its buttons, Undo, a Problem box and a failure line stay
+   full strength (fix round 1): a driver may still need them on a plowed lot. */
+.plow-note{margin-top:6px;font-size:15px}
+.shift-site.done .site-name,.shift-site.done .plow-note,.shift-site.done .lot-line,.shift-site.done .walk-note{opacity:.55}
+.note-err{margin-top:6px;font-size:14px}
+.notebox{margin-top:8px}
+.notebox textarea{width:100%}
+#otherRoutes{width:100%}
+/* Site card (10/3/26): one row per machine, tick on the left, minutes on the right. */
+.vc-eq{align-items:center;justify-content:space-between;flex-wrap:nowrap;margin-top:6px}
+.vc-eq label{display:flex;align-items:center;gap:8px;margin:0;min-height:44px}
+.vc-eq input[data-eqmin]{width:96px}
+.vc-matrow .muted{margin-top:4px;font-size:14px}
+.vc-times{margin-top:12px}
+/* Live view and storm controls (Matt and the leads, 10/3/26). */
+:root{--yellow-bg:#fff3bf;--yellow-ink:#5c4400;--yellow-line:#e0b400}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--yellow-bg:#3d3300;--yellow-ink:#ffe27a;--yellow-line:#a88700}}
+:root[data-theme="dark"]{--yellow-bg:#3d3300;--yellow-ink:#ffe27a;--yellow-line:#a88700}
+.stormctl .row{margin-top:0;flex-wrap:wrap;align-items:center}
+.stormbtn{font-weight:600;min-height:52px}
+.stormbtn.danger{border-color:var(--warn);color:var(--warn)}
+.stormbtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.stormbtn:disabled{opacity:.7}
+.stormbtn.pending{opacity:.55}
+.seg{display:inline-flex;gap:0}
+.seg .stormbtn:first-child{border-radius:8px 0 0 8px}
+.seg .stormbtn:last-child{border-radius:0 8px 8px 0;border-left:0}
+#shiftnow{margin-top:8px}
+.problems{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.problems h2{color:var(--warn);font-size:17px;margin:0 0 6px}
+.problems ul{list-style:none;margin:0;padding:0}
+.problems li{padding:8px 0;border-top:1px solid var(--warn)}
+.problems li:first-child{border-top:0}
+.problem-note{font-weight:600;color:var(--ink)}
+.problems .muted{color:var(--warn)}
+.callouts h2{font-size:17px;margin:0 0 6px}
+.callouts ul{list-style:none;margin:0;padding:0}
+.callouts li{padding:8px 0;border-top:1px solid var(--line)}
+.callouts li:first-child{border-top:0}
+.callout-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.live-open{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;padding:0;background:none;min-height:44px}
+.live-count{font-weight:600}
+.live-route progress{width:100%;height:14px;margin:8px 0}
+.live-who{font-size:15px}
+.live-sites{list-style:none;margin:8px 0 0;padding:0}
+.live-site{padding:8px 0;border-top:1px solid var(--line)}
+.live-siterow{display:flex;justify-content:space-between;gap:8px}
+.live-sitename{font-weight:600}
+.live-status{font-size:14px;color:var(--muted)}
+.live-status.done{color:var(--ok);font-weight:600}
+.live-status.bad{color:var(--warn);font-weight:600}
+/* Archived lists (Matt, 10/10/26): sites and routes under the live list, zones in the map editor; closed until opened */
+.archived{margin:16px 0 8px}
+.archived summary{cursor:pointer;color:var(--muted);padding:10px 0}
+.archlist{list-style:none;margin:0;padding:0}
+.archlist li{display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px solid var(--line)}
+.archlist li > span{flex:1}
+.offroute{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--yellow-bg);color:var(--yellow-ink);border:1px solid var(--yellow-line)}
+.live-totals{margin-top:4px}
+/* Route sheets (10/3/26): the truck line, the Sheets status, and the Print view. */
+.truckrow{margin:6px 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px}
+.truckrow label{display:flex;align-items:center;gap:8px;flex:1;min-width:160px;margin:0}
+.truckrow input{width:auto;flex:1;min-width:90px}
+.truckrow .err{flex-basis:100%;margin:0}
+.sheetsstatus{margin-top:8px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#printview{position:fixed;inset:0;z-index:20;overflow:auto;background:#d9d8d4;color:#000}
+#printbar{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);color:var(--ink);border-bottom:1px solid var(--line)}
+#printbar .muted{flex:1}
+#printsheets{max-width:8.5in;margin:12px auto;padding:0.5in;background:#fff;color:#000;box-shadow:0 1px 6px rgba(0,0,0,.25);font:11pt/1.35 Arial,Helvetica,sans-serif}
+/* The day handoff card (10/5/26): what night left, at the top of the Storm tab by day. */
+.handoff h2{font-size:17px;margin:0 0 6px}
+.handoff-part{font-size:15px;margin:12px 0 4px;color:var(--muted)}
+.handoff-route{font-size:15px;margin:4px 0}
+.handoff ul{list-style:none;margin:0;padding:0}
+.handoff li{border-top:1px solid var(--line)}
+.handoff li:first-child{border-top:0}
+.handoff-sites li{padding:6px 0}
+.handoff-line{display:block;width:100%;text-align:left;border:0;border-radius:0;padding:8px 0;background:none;color:var(--ink)}
+.handoff-line.done{color:var(--muted)}
+.handoff-callout{font-size:14px;font-weight:600;color:var(--warn);padding:0 0 8px}
+#handoffdone{margin-top:8px}
+#printsheets .printname{font:600 12px/1.3 system-ui,sans-serif;color:#555;margin:14px 0 4px}
+/* Only while Print sheets is open (body.printing, set by lib/shiftlogui.js): any other print of the app is left alone. */
+@media print{
+  body.printing>*:not(#printview){display:none !important}
+  body.printing #printview{position:static;overflow:visible;background:#fff}
+  body.printing #printbar{display:none}
+  body.printing #printsheets .printname{display:none}
+  body.printing #printsheets{max-width:none;margin:0;padding:0;box-shadow:none}
+}
+/* Live window (Matt, 10/6/26): on a laptop or TV the Storm tab's live view is a dashboard.
+   The summary line is on every screen; from 1000 px the column opens out, Problems and
+   Callouts share a row, and the routes sit in a grid. Phones keep one column. */
+.livesum{font-weight:600;font-size:15px;padding:8px 12px;border-radius:10px;background:var(--chip);margin:-4px 0 12px}
+@media (min-width:1000px){
+  body[data-tab="storm"] main{max-width:none;padding:12px 24px}
+  body[data-tab="storm"] .livesum{font-size:20px;padding:12px 16px}
+  body[data-tab="storm"] .live-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;align-items:start}
+  body[data-tab="storm"] .live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start}
+  body[data-tab="storm"] .live-grid .card{margin-bottom:0}
+  body[data-tab="storm"] .live-route .route-badge{font-size:20px}
+  body[data-tab="storm"] .live-count,body[data-tab="storm"] .live-who,body[data-tab="storm"] .live-sitename{font-size:17px}
+  body[data-tab="storm"] .stormhead{font-size:20px}
+}
+/* Snow map (Matt, 10/6/26): a dot per site on one map of Anchorage, coloured by the next 12 hours'
+   forecast snowfall; a measured depth rings the dot. Steps: no forecast, none, under 1", 1-3", 3-6", 6"+. */
+#snowmapbox{position:relative;height:48vh;min-height:260px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#e8e6e1}
+#snowmapcard .row{margin-top:0;align-items:center;justify-content:space-between}
+#snowmapcard h2{flex:1}
+.snowmapfoot{margin-top:8px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.snowmapfoot i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid #777}
+#snowmapinfo{margin-top:8px;min-height:1.4em}
+.snowdot{display:flex;flex-direction:column;align-items:center;cursor:pointer;font:600 12px/1.2 system-ui,sans-serif;color:#1d1d1b;--dot:#bbb}
+.snowdot-pin{width:16px;height:16px;border-radius:50%;background:var(--dot);border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.6)}
+.snowdot-label{margin-top:2px;padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.92);white-space:nowrap}
+.snowdot.nofc{--dot:#bdbdbd}.snowdot.none{--dot:#ffffff}.snowdot.light{--dot:#9ecae1}.snowdot.mid{--dot:#4292c6}.snowdot.heavy{--dot:#08519c}.snowdot.severe{--dot:#6a3d9a}
+.snowdot.measured .snowdot-pin{box-shadow:0 0 0 3px #1b7a3a,0 0 4px rgba(0,0,0,.6)}
+.snowdot.measured .snowdot-label{font-weight:800;background:#e6f4ea}
+.snowmapfoot i.nofc{background:#bdbdbd}.snowmapfoot i.none{background:#fff}.snowmapfoot i.light{background:#9ecae1}.snowmapfoot i.mid{background:#4292c6}.snowmapfoot i.heavy{background:#08519c}.snowmapfoot i.severe{background:#6a3d9a}
+/* The bars fit a phone (Matt, 10/6/26 evening). Six admin tabs must share the bottom bar whatever
+   the phone's text size: each shrinks, never pushes a sibling off the screen. In the top bar the
+   name outranks the title: "Plow Command" gives way before the name does. */
+nav button{min-width:0;padding:8px 2px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header h1{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+header #who{flex:1 1 auto;min-width:0;text-align:left}
+/* On a phone, once someone is signed in, the name takes the title's place: "Plow Command" is the icon
+   they tapped; their own name and role are what the bar is for. */
+@media (max-width:480px){
+  header:has(#who:not(:empty)) h1{display:none}
+  header #who{font-size:14px;padding:4px 10px}
+}
+
+/* A Valley person (roster-3, 10/8/26): a small V always; amber while it is a short night (Matt does not call Valley crew in under 8 hours). */
+.chip .home{display:inline-block;font-size:11px;font-weight:700;line-height:1;padding:2px 5px;border-radius:8px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+.chip.valley-short{border-color:var(--amber);background:var(--amber-bg)}
+#shortnight.on{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+/* Who is waiting (10/19/26): the count on Matt's Roster tab. */
+.tabcount{display:inline-block;min-width:18px;padding:0 5px;margin-left:2px;border-radius:9px;background:var(--warn);color:var(--bg);font-size:12px;line-height:18px;font-weight:700;text-align:center}
