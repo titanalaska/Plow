@@ -326,3 +326,25 @@ test('zoneDistance: a lot is 0 in its body, the hole\'s edge distance inside an 
   assert.strictEqual(SnowMap.zoneDistance([5, 5], { id: 'P', type: 'storage', ring: [[0, 0], [10, 0], [10, 10], [0, 10]] }, id), 0);
   assert.ok(Math.abs(SnowMap.zoneDistance([5, 4], { id: 'A', type: 'push', ring: [[0, 0], [10, 0]] }, id) - 4) < 1e-9);
 });
+
+// ---- the lot's hatch (Matt, 10/23/26: "put some striped lines across it … when everybody else starts looking at this") ----
+// A 12 x 12 tile for MapLibre's fill-pattern: a 45-degree stripe 2 px wide in the lot's green, the rest clear, so the
+// stripes repeat every 12 px and the aerial shows between them. Worked by hand: the stripe is every pixel where
+// (x - y) mod 12 is 0 or 1 (the two diagonals x = y and x = y + 1, wrapping), so 2 pixels on each of 12 rows = 24 opaque
+// pixels of 144; each opaque pixel is #2d6a2d (45, 106, 45) at alpha 204 (80%); every other pixel is fully clear.
+test('lotStripes: a 12 x 12 RGBA tile with a 2 px diagonal stripe of the lot\'s green, 24 opaque pixels, clear elsewhere', () => {
+  const t = SnowMap.lotStripes();
+  assert.deepStrictEqual([t.width, t.height, t.data.length], [12, 12, 12 * 12 * 4]);
+  const px = (x, y) => Array.from(t.data.slice((y * 12 + x) * 4, (y * 12 + x) * 4 + 4));
+  let opaque = 0;
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
+    const p = px(x, y), on = ((x - y) % 12 + 12) % 12 <= 1;
+    if (on) { opaque++; assert.deepStrictEqual(p, [45, 106, 45, 204], 'stripe pixel ' + x + ',' + y); }
+    else assert.strictEqual(p[3], 0, 'clear pixel ' + x + ',' + y);
+  }
+  assert.strictEqual(opaque, 24);
+  assert.deepStrictEqual(px(0, 0), [45, 106, 45, 204]);
+  assert.strictEqual(px(6, 0)[3], 0);
+  assert.deepStrictEqual(px(11, 10), [45, 106, 45, 204]);   // x - y = 1
+  assert.deepStrictEqual(px(0, 11), [45, 106, 45, 204]);    // x - y = -11, which wraps to 1
+});

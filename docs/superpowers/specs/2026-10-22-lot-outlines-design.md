@@ -89,8 +89,10 @@ look at zones. They do not change, and the identity test keeps them identical.
 plow green, the "match Bootprint" rule of 10/4/26). `AREAS` stays the two kinds that share the pile layers; the lot
 has its own filter.
 
-A lot draws **under** the piles and keep-clear areas, lighter than them: its own two layers `lot-fill` (opacity
-0.15) and `lot-line` (2 px) before `zones-fill`, so a pile over a lot still reads as a pile. The feature is a
+A lot draws **under** the piles and keep-clear areas, lighter than them: its own layers `lot-fill` (opacity
+0.15), `lot-hatch` (a 45° stripe tile, `lotStripes()`, 2 px lines 12 px apart in the same green at 80%, handed to
+MapLibre on `styleimagemissing`; Matt, 10/23/26, after the first real lot read too faint for the crew) and `lot-line`
+(3 px) before `zones-fill`, so a pile over a lot still reads as a pile. The feature is a
 GeoJSON Polygon whose first ring is the lot and the rest its holes, so the islands are unfilled and outlined.
 `drawable` is unchanged for the ring; a hole the map cannot draw (hand-edited in the Sheet) is left out of the
 drawing and the server's number stands.

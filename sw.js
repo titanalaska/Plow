@@ -6,7 +6,7 @@
 // titanalaska.github.io carries every Titan app on one origin, so the Cache API
 // is shared: this worker only ever deletes its OWN old versions
 // (titan-plow-shell-*), never titan-snow-* (Shovel Command's), wolf-*, groundwork-* or anyone else's.
-var CACHE_VERSION = 'titan-plow-shell-2';
+var CACHE_VERSION = 'titan-plow-shell-3';
 // Map code is in the shell so a map still opens with no signal (zones on a
 // plain background). The aerial TILES are never cached: other origins pass by.
 var SHELL = ['./', 'index.html', 'app.css', 'lib/config.js', 'lib/forms.js', 'lib/api.js', 'lib/geo.js', 'lib/lot.js',

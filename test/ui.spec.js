@@ -1092,7 +1092,7 @@ test('map: a push arrow draws a white line and a head; a pile is purple; no walk
   });
   // The lot first (10/22/26, light, under everything), then the areas, then the arrow: its dark casing, the white line on
   // it, the head's fill and the head's dark edge.
-  expect(style.order).toEqual(['bg', 'esri', 'moa', 'lot-fill', 'lot-line', 'zones-fill', 'zones-line', 'push-casing', 'push-line', 'push-head', 'push-head-line']);
+  expect(style.order).toEqual(['bg', 'esri', 'moa', 'lot-fill', 'lot-hatch', 'lot-line', 'zones-fill', 'zones-line', 'push-casing', 'push-line', 'push-head', 'push-head-line']);
   const AREAS = ['in', ['get', 'type'], ['literal', ['storage', 'no_touch']]];
   // The areas' colour is the kinds' own table: a pile (storage) is purple, #7d5ba6; anything else falls to grey.
   const TABLE = ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#2d6a2d', '#888888'];
@@ -1244,12 +1244,17 @@ test('map: a lot draws under the piles as a polygon with its island, and a tap o
   const drawn = await page.evaluate(() => {
     const m = window.SnowMapView, f = m.getSource('zones')._data.features.find((x) => x.properties.id === 'L1');
     const ids = m.getStyle().layers.map((l) => l.id);
-    return { rings: f.geometry.coordinates.length, lotFill: ids.indexOf('lot-fill'), lotLine: ids.indexOf('lot-line'), zonesFill: ids.indexOf('zones-fill') };
+    return { rings: f.geometry.coordinates.length, lotFill: ids.indexOf('lot-fill'), lotHatch: ids.indexOf('lot-hatch'), lotLine: ids.indexOf('lot-line'), zonesFill: ids.indexOf('zones-fill'),
+      pattern: m.getPaintProperty('lot-hatch', 'fill-pattern'), lineWidth: m.getPaintProperty('lot-line', 'line-width'), hasStripes: m.hasImage('lot-stripes') };
   });
   expect(drawn.rings).toBe(2);                       // the lot and its island
   expect(drawn.lotFill).toBeGreaterThan(-1);
-  expect(drawn.lotFill).toBeLessThan(drawn.zonesFill); // under the piles
-  expect(drawn.lotLine).toBeLessThan(drawn.zonesFill);
+  expect(drawn.lotFill).toBeLessThan(drawn.lotHatch);  // the tint, then the stripes (Matt, 10/23/26), then the line
+  expect(drawn.lotHatch).toBeLessThan(drawn.lotLine);
+  expect(drawn.lotLine).toBeLessThan(drawn.zonesFill); // all of it under the piles
+  expect(drawn.pattern).toBe('lot-stripes');
+  expect(drawn.lineWidth).toBe(3);
+  expect(drawn.hasStripes).toBe(true);                 // the tile was handed over when the style asked for it
   await expect(page.locator('#maplegend')).toContainText('Lot');
   const pt = await page.evaluate(([lng, lat]) => { const p = window.SnowMapView.project([lng, lat]); const r = window.SnowMapView.getCanvas().getBoundingClientRect(); return { x: r.left + p.x, y: r.top + p.y }; },
     [PAC[0] - eastM(18), PAC[1] + northM(20)]);
