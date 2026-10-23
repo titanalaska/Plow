@@ -235,6 +235,7 @@ const ENGLISH_FILES = {
   'lib/mapedit.js': 'Matt\'s map editor (Tasks 13-14 gave it the few rows it has; the rest is English by the Shovel spec)',
   'lib/forms.js': 'the Sites and Routes forms\' parsers (Matt\'s)',
   'lib/bpimport.js': 'the Bootprint import (Matt\'s editor)',
+  'lib/lot.js': 'the hole refusals, the server\'s own words (shared file): shown only in Matt\'s map editor, on a zone form or an import',
   'lib/snowmap.js': 'the Anchorage snow map (the live view\'s, dispatcher and leads)',
 };
 // Functions, by file, that only Matt, the dispatcher or a Board lead reach, or that the Shovel final ruling left English.
@@ -281,7 +282,6 @@ const LEFT_ENGLISH = {
   'Esri, Maxar, Earthstar Geographics': 'the photo credit: proper nouns',
   'Municipality of Anchorage': 'the photo credit: a proper noun',
   'Esri, HERE, Garmin': 'the photo credit: proper nouns',
-  'sq ft': 'a unit on a zone card whose numbers are the zone\'s own',
   // lib/shiftlog.js checkTap: the refusals for a tap that is not the lot or not plowed/problem. The phone only ever sends
   // zone_id lot with a state from its two buttons and checks before it sends, so no crew phone shows these two. (The three
   // undoTarget refusals in the same file ARE shown, as the server's reason after "Not saved:", and have rows.)

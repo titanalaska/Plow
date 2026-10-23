@@ -20,7 +20,7 @@ const url = require('url');
 const PAGE = url.pathToFileURL(path.resolve(__dirname, '..', 'index.html')).href;
 const isSnow = (u) => u.href.includes('AKfycbxgdG2uWS4DihnbHUx20AC_thZlmSJ5te4VMAQbWy0eNcMH8OHav6Pd8ane-7q01EzO');
 const isInv = (u) => u.href.includes('AKfycbyudFaJ0dsSYMo');
-const VERSION = 'plow-1'; // lib/config.js EXPECTED_BACKEND
+const VERSION = 'plow-2'; // lib/config.js EXPECTED_BACKEND
 const NO_SIGNAL = "Couldn't reach the server. Not saved, try again.";
 const STALE = 'Someone changed this since you opened it. Reload and try again.';
 

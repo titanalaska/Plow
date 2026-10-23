@@ -21,13 +21,13 @@ const TOKENS = { 'tok-matt': 'admin', 'tok-jordan': 'crew', 'tok-alex': 'lead', 
 
 // A small fake of the snow backend, with the real reply shapes.
 // opts.oldBackend: an older server (curbs-1), which never sent `action` on a reply.
-// Plow Command's server has no `slim` and no `points` (plow-command-script Code.js, plow-1): bootstrap and getZones
+// Plow Command's server has no `slim` and no `points` (plow-command-script Code.js, plow-2): bootstrap and getZones
 // always answer every live zone with its ring, and so does this fake.
 function fakeSnow(state, opts = {}) {
   return (body) => {
     // Every POST reply carries `action`, the action it answers (outlines-1 on): the phone refuses a reply from its own version that
     // does not (lib/api.js, the not-saved guard). A curbs-1 server (opts.oldBackend) has never sent one.
-    const v = { version: opts.version || (opts.oldBackend ? 'curbs-1' : 'plow-1'), ...(opts.oldBackend ? {} : { action: body.action }) };
+    const v = { version: opts.version || (opts.oldBackend ? 'curbs-1' : 'plow-2'), ...(opts.oldBackend ? {} : { action: body.action }) };
     if (opts.expired && opts.expired.on) return { ok: false, code: 'signin', reason: 'Session expired. Sign in again.', ...v };
     // Roster self-service (10/6/26): the real backend's rules for one's own card (snow-app-script
     // saveMyCard_, test/api.test.js). Nina is approved in Inventory and not on the roster: her save
@@ -887,7 +887,7 @@ test('after a conflict the app reloads the latest, so the retry can save', async
     if (b.action === 'saveSite' && first) {
       first = false;
       state.sites = state.sites.map((s) => (s.id === 'S1' ? { ...s, rev: 2, notes: 'theirs' } : s));
-      return { ok: false, code: 'conflict', reason: 'Someone changed this since you opened it. Reload and try again.', version: 'plow-1', action: b.action };
+      return { ok: false, code: 'conflict', reason: 'Someone changed this since you opened it. Reload and try again.', version: 'plow-2', action: b.action };
     }
     return base(b);
   } });
@@ -952,13 +952,13 @@ const mapZoneIds = (page) => page.evaluate(() => window.SnowMapView._snow.zones.
 test('editor: three buttons, Pile, Keep clear and Push arrow, coloured from the map\'s table; the legend lists the same three', async ({ page }) => {
   await adminMap(page, mapWorld());
   expect(await page.locator('#maplegend span').allTextContents()).toEqual(
-    ['Snow storage', 'Keep clear', 'Push snow this way']);
+    ['Snow storage', 'Keep clear', 'Push snow this way', 'Lot']);   // the lot's row (10/22/26) last
   await page.click('#mapedit');
   await page.click('#ed_new');
   expect(await page.locator('[data-ztype]').evaluateAll((els) => els.map((e) => e.dataset.ztype + ':' + e.textContent))).toEqual(
-    ['storage:Pile', 'no_touch:Keep clear', 'push:Push arrow']);
+    ['storage:Pile', 'no_touch:Keep clear', 'push:Push arrow', 'lot:Lot']);   // Lot (10/22/26) last, as in the legend
   expect(await page.locator('[data-ztype]').evaluateAll((els) => els.map((e) => [e.style.getPropertyValue('--zc'), e.style.getPropertyValue('--ze')]))).toEqual(
-    [['#7d5ba6', ''], ['#e0218a', ''], ['#ffffff', '#1a1a1a']]);
+    [['#7d5ba6', ''], ['#e0218a', ''], ['#ffffff', '#1a1a1a'], ['#2d6a2d', '']]);
   // Pressed, the arrow's button does not vanish: its fill differs from the card under it.
   await page.click('[data-ztype="push"]');
   await expect(page.locator('[data-ztype="push"]')).toHaveAttribute('aria-pressed', 'true');
@@ -993,6 +993,7 @@ test('the crew map draws every zone with its type and a legend', async ({ page }
   expect(await zoneSource(page)).toEqual([{ id: 'Z1', type: 'storage' }, { id: 'Z2', type: 'storage' }, { id: 'Z3', type: 'no_touch' }]);
   await expect(page.locator('#maplegend')).toContainText('Snow storage');
   await expect(page.locator('#maplegend')).toContainText('Keep clear');
+  await expect(page.locator('#maplegend')).toContainText('Lot');
   await expect(page.locator('#mapsite')).toContainText('4-5 bags IceMelt');
   // Tiles load here, so no outage banner (gives the tile probe time to answer).
   await page.waitForTimeout(1500);
@@ -1089,11 +1090,12 @@ test('map: a push arrow draws a white line and a head; a pile is purple; no walk
         paint: Object.fromEntries(paint[id].map((p) => [p, m.getPaintProperty(id, p)])) }])),
     };
   });
-  // Areas first, then the arrow: its dark casing, the white line on it, the head's fill and the head's dark edge.
-  expect(style.order).toEqual(['bg', 'esri', 'moa', 'zones-fill', 'zones-line', 'push-casing', 'push-line', 'push-head', 'push-head-line']);
+  // The lot first (10/22/26, light, under everything), then the areas, then the arrow: its dark casing, the white line on
+  // it, the head's fill and the head's dark edge.
+  expect(style.order).toEqual(['bg', 'esri', 'moa', 'lot-fill', 'lot-line', 'zones-fill', 'zones-line', 'push-casing', 'push-line', 'push-head', 'push-head-line']);
   const AREAS = ['in', ['get', 'type'], ['literal', ['storage', 'no_touch']]];
   // The areas' colour is the kinds' own table: a pile (storage) is purple, #7d5ba6; anything else falls to grey.
-  const TABLE = ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', '#888888'];
+  const TABLE = ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#2d6a2d', '#888888'];
   expect(style.layers['zones-fill']).toEqual({ type: 'fill', filter: AREAS, paint: { 'fill-color': TABLE } });
   expect(style.layers['zones-line']).toEqual({ type: 'line', filter: AREAS, paint: { 'line-color': TABLE } });
   expect(style.layers['push-casing']).toEqual({ type: 'line', filter: ['==', ['get', 'type'], 'push'], paint: { 'line-color': '#1a1a1a', 'line-width': 7 } });
@@ -1227,6 +1229,36 @@ test('map: tapping a push arrow shows its name and note, and no area', async ({ 
   await expect(page.locator('#zonesheet')).not.toContainText('Push snow this way');
 });
 
+// Lot outlines (10/22/26): a lot (80 m x 60 m around PAC, one 5 m x 5 m island in its south-west corner) draws as one
+// polygon with its island, on its own two layers UNDER the piles' (lot-fill, lot-line before zones-fill), and a tap on
+// open lot (18 m west and 20 m north of PAC: 20 m or more from every pile, and on the canvas, which at this zoom spans
+// about 25 m each side of its centre) shows its card with the server's square footage. On paper: 4,800 - 25 =
+// 4,775 m2 x 10.7639 = 51,398 sq ft (the fake serves the number as stored).
+test('map: a lot draws under the piles as a polygon with its island, and a tap on open lot shows its card with the square footage', async ({ page }) => {
+  const w = mapWorld();
+  w.zones = w.zones.concat([{ id: 'L1', site_id: 'S1', type: 'lot', name: 'Main lot', note: '', ring: ring(PAC[0] - eastM(40), PAC[1] - northM(30), 80, 60),
+    holes: [ring(PAC[0] - eastM(35), PAC[1] - northM(25), 5, 5)], area_sqft: 51398, rev: 1 }]);
+  await openMap(page, 'tok-jordan', w);
+  expect(await zoneSource(page)).toEqual([{ id: 'Z1', type: 'storage' }, { id: 'Z2', type: 'storage' }, { id: 'Z3', type: 'no_touch' }, { id: 'L1', type: 'lot' }]);
+  await page.waitForFunction(() => window.SnowMapView.isSourceLoaded('zones'));
+  const drawn = await page.evaluate(() => {
+    const m = window.SnowMapView, f = m.getSource('zones')._data.features.find((x) => x.properties.id === 'L1');
+    const ids = m.getStyle().layers.map((l) => l.id);
+    return { rings: f.geometry.coordinates.length, lotFill: ids.indexOf('lot-fill'), lotLine: ids.indexOf('lot-line'), zonesFill: ids.indexOf('zones-fill') };
+  });
+  expect(drawn.rings).toBe(2);                       // the lot and its island
+  expect(drawn.lotFill).toBeGreaterThan(-1);
+  expect(drawn.lotFill).toBeLessThan(drawn.zonesFill); // under the piles
+  expect(drawn.lotLine).toBeLessThan(drawn.zonesFill);
+  await expect(page.locator('#maplegend')).toContainText('Lot');
+  const pt = await page.evaluate(([lng, lat]) => { const p = window.SnowMapView.project([lng, lat]); const r = window.SnowMapView.getCanvas().getBoundingClientRect(); return { x: r.left + p.x, y: r.top + p.y }; },
+    [PAC[0] - eastM(18), PAC[1] + northM(20)]);
+  await page.mouse.click(pt.x, pt.y);
+  await expect(page.locator('#zonesheet h2')).toHaveText('Main lot');
+  await expect(page.locator('#zonesheet')).toContainText('Lot');
+  await expect(page.locator('#zonesheet')).toContainText('51,398 sq ft');
+});
+
 // ---------- site maps: Matt's zone editor ----------
 // Corners are clicked at whole pixels; the expected lng/lat is the map's own
 // unproject of that same pixel, so the check is exact (1e-6 deg is ~0.1 m).
@@ -1314,6 +1346,81 @@ test('editor: a pile needs 3 corners: two are blocked before they are sent', asy
   await expect(page.locator('#zoneform')).toBeHidden();
   expect(lastCall(calls, 'saveZone').body.record).toMatchObject({ type: 'storage', name: 'Too small' });
   expect(lastCall(calls, 'saveZone').body.record.ring).toHaveLength(3);
+});
+
+// ---------- the editor's Lot (lot outlines, 10/22/26) ----------
+// The fourth button. A lot drawn here has no holes (islands are traced in Bootprint); one imported with an island keeps
+// it through an edit (the record is spread into the save); a tap on open lot opens it for editing (the editor asks the
+// lot's layer after the piles', so a pile over the lot is picked first). The server's refusal shows in the form.
+const lotWorld = () => {
+  const w = mapWorld();
+  w.zones = w.zones.concat([{ id: 'L1', site_id: 'S1', type: 'lot', name: 'Main lot', note: '', priority: false, ring: ring(PAC[0] - eastM(40), PAC[1] - northM(30), 80, 60),
+    holes: [ring(PAC[0] - eastM(35), PAC[1] - northM(25), 5, 5)], area_sqft: 51398, rev: 1 }]);
+  return w;
+};
+const OPEN_LOT = [PAC[0] - eastM(18), PAC[1] + northM(20)]; // 18 m west, 20 m north of PAC: 20 m from every pile, on the canvas
+async function clickLngLat(page, lngLat) {
+  await mapInView(page);
+  const pt = await page.evaluate(([lng, lat]) => { const p = window.SnowMapView.project([lng, lat]); const r = window.SnowMapView.getCanvas().getBoundingClientRect(); return { x: r.left + p.x, y: r.top + p.y }; }, lngLat);
+  await page.mouse.click(pt.x, pt.y);
+}
+
+test('editor: Matt draws a lot and it saves as type lot with no holes', async ({ page }) => {
+  const calls = await adminMap(page, mapWorld());
+  await page.click('#mapedit');
+  await page.click('#ed_new');
+  await tapCorners(page, CORNERS.slice(0, 3));
+  await page.click('[data-ztype="lot"]');
+  await page.fill('#z_name', 'Back lot');
+  await page.click('#z_save');
+  await expect(page.locator('#zoneform')).toBeHidden();
+  const rec = lastCall(calls, 'saveZone').body.record;
+  expect(rec).toMatchObject({ type: 'lot', name: 'Back lot', rev: 0 });
+  expect('holes' in rec).toBe(false);
+  expect(rec.ring).toHaveLength(3);
+});
+
+test('editor: the type sentence names four', async ({ page }) => {
+  const calls = await adminMap(page, mapWorld());
+  await page.click('#mapedit');
+  await page.click('#ed_new');
+  await tapCorners(page, CORNERS.slice(0, 3));
+  await page.fill('#z_name', 'No kind yet');
+  await page.click('#z_save');
+  await expect(page.locator('#z_err')).toHaveText('Pick a type: Pile, Keep clear, Push arrow or Lot.');
+  expect(calls.filter((c) => c.body.action === 'saveZone')).toHaveLength(0);
+});
+
+test('editor: an imported lot keeps its islands through an edit, and a tap on open lot opens it', async ({ page }) => {
+  const w = lotWorld();
+  const calls = await adminMap(page, w);
+  await page.click('#mapedit');
+  await page.waitForFunction(() => window.SnowMapView.isSourceLoaded('zones'));
+  await clickLngLat(page, OPEN_LOT);
+  await expect(page.locator('#zoneform')).toBeVisible();
+  await expect(page.locator('#z_name')).toHaveValue('Main lot');
+  await expect(page.locator('[data-ztype="lot"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.click('#z_save');
+  await expect(page.locator('#zoneform')).toBeHidden();
+  const rec = lastCall(calls, 'saveZone').body.record;
+  expect(rec).toMatchObject({ id: 'L1', type: 'lot', name: 'Main lot', rev: 1 });
+  expect(rec.holes).toEqual(w.zones.find((z) => z.id === 'L1').holes);
+  expect('area_sqft' in rec).toBe(false); // the server works it out
+});
+
+test("editor: the server's hole refusal shows in the form and the lot stays open", async ({ page }) => {
+  await tiles(page);
+  await open(page, { token: 'tok-matt', snow: fakeSnow(lotWorld(), { saveReply: { ok: false, code: 'invalid', reason: 'A hole must be inside the lot' } }) });
+  await page.click('nav [data-tab="sites"]');
+  await page.click('[data-map="S1"]');
+  await page.waitForFunction(() => window.SnowMapView && window.SnowMapView.getSource('zones'));
+  await page.click('#mapedit');
+  await page.waitForFunction(() => window.SnowMapView.isSourceLoaded('zones'));
+  await clickLngLat(page, OPEN_LOT);
+  await expect(page.locator('#z_name')).toHaveValue('Main lot');
+  await page.click('#z_save');
+  await expect(page.locator('#z_err')).toHaveText('A hole must be inside the lot');
+  await expect(page.locator('#zoneform')).toBeVisible();
 });
 
 // ---------- the editor's push arrows (Task 14, 10/21/26) ----------
@@ -1879,8 +1986,8 @@ test('Done never throws away a zone in progress', async ({ page }) => {
 // ---------- import from Bootprint (Matt, 10/1/26: trace in Bootprint, bring it here) ----------
 const mPin = (x, y) => ({ lat: PAC[1] + y / RE / DEGR, lng: PAC[0] + x / (RE * Math.cos(PAC[1] * DEGR)) / DEGR, accuracy: 0 });
 const bpRect = (x, y) => [mPin(x, y), mPin(x + 10, y), mPin(x + 10, y + 5), mPin(x, y + 5)];
-// Plow Command (Task 14, 10/21/26): the import brings piles only. The near job has two piles (an area, and a 6 ft run
-// that comes across as a strip), a walk and a lot: 2 piles in; 1 walk and 1 lot left out, and said so.
+// Plow Command (Task 14, 10/21/26): the import brings piles, and from 10/22/26 the lot. The near job has two piles (an
+// area, and a 6 ft run that comes across as a strip), a walk and a lot: 1 lot and 2 piles in; 1 walk left out, and said so.
 const bpExport = () => Buffer.from(JSON.stringify({
   schema: 'bootprint-library-export', version: 1, exportedAt: '2026-10-01T18:00:00Z',
   jobs: [
@@ -1903,22 +2010,24 @@ test('a Bootprint job imports its piles as storage zones, and nothing else leave
   await page.click('#mapedit');
   await importFile(page, bpExport());
   await expect(page.locator('#bp_jobs [data-bpjob]').first()).toContainText('Near PAC'); // nearest the site first
-  await expect(page.locator('#bp_jobs [data-bpjob]').first()).toContainText('2 piles');
+  // Lot outlines (10/22/26): the job's "Lot" (plow surface) comes in as a lot too, in job order between the piles.
+  await expect(page.locator('#bp_jobs [data-bpjob]').first()).toContainText('1 lot and 2 piles');
   await page.locator('#bp_jobs [data-bpjob]').first().click();
-  await expect(page.locator('#bp_sum b')).toHaveText('2 piles to add');
-  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 walk, 1 lot'); // one of each: singular
-  await expect(page.locator('#bp_add')).toHaveText('Add 2 piles');
+  await expect(page.locator('#bp_sum b')).toHaveText('1 lot and 2 piles to add');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 walk'); // one: singular
+  await expect(page.locator('#bp_add')).toHaveText('Add 1 lot and 2 piles');
   await page.click('#bp_add');
-  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(2);
+  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(3);
   const recs = calls.filter((c) => c.body.action === 'saveZone').map((c) => c.body.record);
   expect(recs.map((r) => [r.name, r.type, r.site_id, r.from])).toEqual([
-    ['Pile west', 'storage', 'S1', 'bootprint:NEAR:1'], ['Back run', 'storage', 'S1', 'bootprint:NEAR:3']]);
-  expect(recs[1].ring.length).toBe(4); // the run came across as a strip
-  // Both reached the open map and are drawn on it: mapWorld's three areas and the two piles.
-  await expect.poll(() => mapZoneIds(page)).toEqual(['Z1', 'Z2', 'Z3', 'X91', 'X92']); // the fake's new ids: X + (90 + n)
+    ['Pile west', 'storage', 'S1', 'bootprint:NEAR:1'], ['Lot', 'lot', 'S1', 'bootprint:NEAR:2'], ['Back run', 'storage', 'S1', 'bootprint:NEAR:3']]);
+  expect(recs[2].ring.length).toBe(4); // the run came across as a strip
+  expect('holes' in recs[1]).toBe(false); // a lot traced without islands carries no holes key
+  // All three reached the open map and are drawn on it: mapWorld's three areas, the two piles and the lot.
+  await expect.poll(() => mapZoneIds(page)).toEqual(['Z1', 'Z2', 'Z3', 'X91', 'X92', 'X93']); // the fake's new ids: X + (90 + n)
   await expect.poll(() => zoneSource(page)).toEqual([{ id: 'Z1', type: 'storage' }, { id: 'Z2', type: 'storage' }, { id: 'Z3', type: 'no_touch' },
-    { id: 'X91', type: 'storage' }, { id: 'X92', type: 'storage' }]);
-  await expect(page.locator('#toast')).toContainText('Added 2 piles from Bootprint');
+    { id: 'X91', type: 'storage' }, { id: 'X92', type: 'lot' }, { id: 'X93', type: 'storage' }]);
+  await expect(page.locator('#toast')).toContainText('Added 1 lot and 2 piles from Bootprint');
   for (const c of calls) {
     const s = JSON.stringify(c.body);
     expect(s).not.toContain('FAR-SECRET-JOB');
@@ -1944,20 +2053,22 @@ test('editor: Import from Bootprint brings piles only and says what it left out'
   for (let i = 0; i < 3; i++) zs.push({ id: ++id, name: 'Snow pile ' + (i + 1), mode: 'area', surface: 'storage', pins: bpRect(-80 + 15 * i, -20), widthFt: '' });
   expect(zs).toHaveLength(19); // the job is what the comment says
   await importFile(page, Buffer.from(JSON.stringify({ schema: 'bootprint-library-export', version: 1, jobs: [{ id: 'NEAR', name: 'Near PAC', zones: zs }] })));
-  await expect(page.locator('#bp_jobs [data-bpjob]').first()).toContainText('3 piles');
+  // Lot outlines (10/22/26): the job's one plow area, "Main lot", comes in as a lot now, before the piles (job order).
+  await expect(page.locator('#bp_jobs [data-bpjob]').first()).toContainText('1 lot and 3 piles');
   await page.locator('#bp_jobs [data-bpjob]').first().click();
-  await expect(page.locator('#bp_sum b')).toHaveText('3 piles to add');
-  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 12 walks, 3 hand, 1 lot');
-  await expect(page.locator('#bp_add')).toHaveText('Add 3 piles');
-  // The preview shows the three piles and nothing else, each as a pile.
+  await expect(page.locator('#bp_sum b')).toHaveText('1 lot and 3 piles to add');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 12 walks, 3 hand');
+  await expect(page.locator('#bp_add')).toHaveText('Add 1 lot and 3 piles');
+  // The preview shows the lot and the three piles and nothing else, each as its kind.
   await expect.poll(() => page.evaluate(() => window.SnowMapView.getSource('draft')._data.features.map((f) => f.properties.type)))
-    .toEqual(['storage', 'storage', 'storage']);
+    .toEqual(['lot', 'storage', 'storage', 'storage']);
   await page.click('#bp_add');
-  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(3);
-  expect(calls.filter((c) => c.body.action === 'saveZone').map((c) => [c.body.record.name, c.body.record.type, c.body.record.from])).toEqual([
-    ['Snow pile 1', 'storage', 'bootprint:NEAR:17'], ['Snow pile 2', 'storage', 'bootprint:NEAR:18'], ['Snow pile 3', 'storage', 'bootprint:NEAR:19']]);
-  await expect(page.locator('#toast')).toContainText('Added 3 piles from Bootprint');
-  for (const c of calls) expect(JSON.stringify(c.body)).not.toMatch(/Walk|Curb|Main lot/);
+  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(4);
+  expect(calls.filter((c) => c.body.action === 'saveZone').map((c) => [c.body.record.name, c.body.record.type, c.body.record.from, 'holes' in c.body.record])).toEqual([
+    ['Main lot', 'lot', 'bootprint:NEAR:16', false],
+    ['Snow pile 1', 'storage', 'bootprint:NEAR:17', false], ['Snow pile 2', 'storage', 'bootprint:NEAR:18', false], ['Snow pile 3', 'storage', 'bootprint:NEAR:19', false]]);
+  await expect(page.locator('#toast')).toContainText('Added 1 lot and 3 piles from Bootprint');
+  for (const c of calls) expect(JSON.stringify(c.body)).not.toMatch(/Walk|Curb/);
 });
 
 test('importing the same Bootprint job twice adds nothing the second time', async ({ page }) => {
@@ -1966,12 +2077,41 @@ test('importing the same Bootprint job twice adds nothing the second time', asyn
   await importFile(page, bpExport());
   await page.locator('#bp_jobs [data-bpjob]').first().click();
   await page.click('#bp_add');
-  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(2);
+  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(3);   // 2 piles + the lot (10/22/26)
   await importFile(page, bpExport());
   await page.locator('#bp_jobs [data-bpjob]').first().click();
-  await expect(page.locator('#bp_sum b')).toHaveText('0 piles to add');
-  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 walk, 1 lot, 2 already imported');
+  await expect(page.locator('#bp_sum b')).toHaveText('Nothing to add');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 walk, 3 already imported');
   await expect(page.locator('#bp_add')).toBeDisabled();
+});
+
+// Lot outlines (10/22/26): a lot traced in Bootprint with an island as a cut-out comes in with that island as its hole,
+// which reaches the server in the record; a cut-out inside no lot is left out and named. The job (in metres from PAC):
+// a 100 m x 60 m lot, a 10 m x 5 m island inside it, and a cut-out 100 m east of the lot.
+test('import: a lot\'s islands ride along as holes and reach the server; a stray cut-out is left out', async ({ page }) => {
+  const calls = await adminMap(page, mapWorld());
+  await page.click('#mapedit');
+  const zs = [
+    { id: 1, name: 'Main lot', mode: 'area', surface: 'plow', pins: [mPin(-50, -30), mPin(50, -30), mPin(50, 30), mPin(-50, 30)], widthFt: '' },
+    { id: 2, name: 'Planter', mode: 'cut', surface: 'plow', pins: [mPin(-40, -20), mPin(-30, -20), mPin(-30, -15), mPin(-40, -15)], widthFt: '' },
+    { id: 3, name: 'Stray', mode: 'cut', surface: 'plow', pins: [mPin(150, -30), mPin(160, -30), mPin(160, -25), mPin(150, -25)], widthFt: '' },
+  ];
+  await importFile(page, Buffer.from(JSON.stringify({ schema: 'bootprint-library-export', version: 1, jobs: [{ id: 'LOTJOB', name: 'Lot job', zones: zs }] })));
+  await expect(page.locator('#bp_jobs [data-bpjob]').first()).toContainText('1 lot (1 island)');
+  await page.locator('#bp_jobs [data-bpjob]').first().click();
+  await expect(page.locator('#bp_sum b')).toHaveText('1 lot (1 island) to add');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 cut-out outside any lot');
+  // The preview's lot carries its island as a second ring.
+  await expect.poll(() => page.evaluate(() => window.SnowMapView.getSource('draft')._data.features.map((f) => [f.properties.type, f.geometry.coordinates.length])))
+    .toEqual([['lot', 2]]);
+  await page.click('#bp_add');
+  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(1);
+  const rec = lastCall(calls, 'saveZone').body.record;
+  expect(rec).toMatchObject({ name: 'Main lot', type: 'lot', from: 'bootprint:LOTJOB:1' });
+  expect(rec.holes).toHaveLength(1);
+  expect(rec.holes[0]).toHaveLength(4);
+  await expect(page.locator('#toast')).toContainText('Added 1 lot (1 island) from Bootprint');
+  for (const c of calls) expect(JSON.stringify(c.body)).not.toMatch(/Stray/);
 });
 
 // Matt's imports, 10/4/26: the job list rendered off screen, ~1 zone per 2-3 s
@@ -1990,12 +2130,12 @@ test('the Bootprint job list is brought onto the screen when the file is read', 
 
 async function importSlowly(page) {
   const calls = await adminMap(page, mapWorld());
-  await slowZoneSaves(page); // 1.2 s per zone; bpExport's near job has 2
+  await slowZoneSaves(page); // 1.2 s per zone; bpExport's near job has 3 (2 piles and, from 10/22/26, its lot)
   await page.click('#mapedit');
   await importFile(page, bpExport());
   await page.locator('#bp_jobs [data-bpjob]').first().click();
   await page.click('#bp_add');
-  await expect(page.locator('#bp_add')).toHaveText('Adding 1 of 2…');
+  await expect(page.locator('#bp_add')).toHaveText('Adding 1 of 3…');
   return calls;
 }
 const zoneSaves = (calls) => calls.filter((c) => c.body.action === 'saveZone').length;
@@ -2005,9 +2145,9 @@ test('an import says "Adding n of N…" and locks its panel until it is done', a
   await expect(page.locator('#bp_add')).toBeDisabled();
   await expect(page.locator('#bp_cancel')).toBeDisabled();
   await expect(page.locator('#bp_jobs [data-bpjob]').first()).toBeDisabled();
-  await expect(page.locator('#bp_add')).toHaveText('Adding 2 of 2…', { timeout: 3000 });
-  await expect(page.locator('#toast')).toContainText('Added 2 piles from Bootprint');
-  expect(zoneSaves(calls)).toBe(2);
+  await expect(page.locator('#bp_add')).toHaveText('Adding 3 of 3…', { timeout: 4000 });
+  await expect(page.locator('#toast')).toContainText('Added 1 lot and 2 piles from Bootprint');
+  expect(zoneSaves(calls)).toBe(3);
   await expect(page.locator('#bpimport')).toBeHidden();
 });
 
@@ -2021,8 +2161,8 @@ test('Done, New zone and a tab mid-import are refused with a word, and every zon
   }
   await expect(page.locator('#zoneform')).toBeHidden();   // New zone did not start a drawing
   await expect(page.locator('#bpimport')).toBeVisible();  // Done did not close the editor
-  await expect(page.locator('#toast')).toContainText('Added 2 piles from Bootprint', { timeout: 5000 });
-  expect(zoneSaves(calls)).toBe(2);
+  await expect(page.locator('#toast')).toContainText('Added 1 lot and 2 piles from Bootprint', { timeout: 5000 });
+  expect(zoneSaves(calls)).toBe(3);
   await expect(page.locator('#ed_new')).toBeVisible();    // still in the editor, on the map
 });
 
@@ -2035,11 +2175,11 @@ test('the phone\'s Back and ‹ Back mid-import leave the map open, and the impo
     await expect(page.locator('#toast')).not.toContainText('Added'); // Matt was told why, before the end
     await expect(page.locator('#mapbox')).toBeVisible();
   }
-  await expect(page.locator('#toast')).toContainText('Added 2 piles from Bootprint', { timeout: 5000 });
-  expect(zoneSaves(calls)).toBe(2);
-  // Both landed on the map that stayed open, and are drawn on it: mapWorld's 3 + the 2 piles.
-  await expect.poll(async () => (await mapZoneIds(page)).length).toBe(5);
-  await expect.poll(async () => (await zoneSource(page)).length).toBe(5);
+  await expect(page.locator('#toast')).toContainText('Added 1 lot and 2 piles from Bootprint', { timeout: 5000 });
+  expect(zoneSaves(calls)).toBe(3);
+  // All three landed on the map that stayed open, and are drawn on it: mapWorld's 3 + the 2 piles + the lot.
+  await expect.poll(async () => (await mapZoneIds(page)).length).toBe(6);
+  await expect.poll(async () => (await zoneSource(page)).length).toBe(6);
   // Once done, Back works as before: it closes the map.
   await phoneBack(page);
   await expect(page.locator('#mapbox')).toHaveCount(0);
@@ -2148,11 +2288,11 @@ test('Edit map on a map whose style is still unparsed: the bar comes, and the im
   // The file can be picked and the job chosen before the style is there; the preview waits for it.
   await importFile(page, bpExport());
   await page.locator('#bp_jobs [data-bpjob]').first().click();
-  await expect(page.locator('#bp_sum')).toContainText('2 piles to add');
+  await expect(page.locator('#bp_sum')).toContainText('1 lot and 2 piles to add');
   expect(await draftFeatures(page)).toBe(-1);
   await releaseFrames(page);
   await page.waitForFunction(() => window.SnowMapView.getSource('zones'));
-  await expect.poll(() => draftFeatures(page)).toBe(2);
+  await expect.poll(() => draftFeatures(page)).toBe(3);
   // The photo never came (its tiles are still held): the preview did not wait for it.
   await page.waitForTimeout(1000);
   expect(await page.evaluate(() => window.SnowMapView.isStyleLoaded())).toBe(false);
@@ -3805,7 +3945,7 @@ test('a forecast failure shows no hint and taps still work', async ({ page }) =>
 });
 
 // ---------------- The forecast point from a drawing (Plow Command, 10/21/26: no MOA outlines, no slim sign-in) ----------------
-// The sign-in carries every live zone with its ring (plow-command-script Code.js, plow-1: no `slim`, no `points`), so a
+// The sign-in carries every live zone with its ring (plow-command-script Code.js, plow-2: no `slim`, no `points`), so a
 // site with a drawing and no saved view gets its forecast point from its first live zone's centroid (SnowWeather.point).
 //
 // Snow pile 1 (Z1 at PAC) drawn as a 2-thousandth square around (-149.8761, 61.2049), so its centroid IS that point,
@@ -6985,6 +7125,58 @@ const saveCalls = (calls) => calls.filter((c) => c.body.action === 'saveSite');
 // shovel side. Adds 2 sites + 3 piles = 5; updates 1 site + 6 piles = 7 (different, so the toast cannot swap them unseen).
 const PULL = { updates: { sites: 1, zones: 6 }, shovel_archived: ['S2', 'S99'] };
 const PULL_LINE = 'Adds: 2 sites, 3 piles · Updates: 1 site, 6 piles · Unchanged: 5 sites, 6 piles · Left out: 7 zones';
+
+// ---------------- the lot's square footage (lot outlines, 10/22/26) ----------------
+// "Lot: 48,200 sq ft" under the address (after the plow note) on the Sites card and the Storm card: the sum of the site's
+// live lot zones' area_sqft, the server's figures. A site with no lot zone shows no line, never a 0. A route's total is
+// the sum over its live sites, on the Routes tab and the dispatcher's live view. Worked by hand: S1 has two lots,
+// 30,000 + 18,200 = 48,200; S2 has none; R1 = [S1, S2] totals 48,200; R2 = [S2] has no line.
+const lotCards = () => {
+  const w = stormWorld();
+  w.routes = [{ id: 'R1', name: 'N1', rev: 1, site_ids: ['S1', 'S2'] }, { id: 'R2', name: 'N2', rev: 1, site_ids: ['S2'] }];
+  // The crew's Storm tab shows their own posted route only, so the post's R1 (Jordan's) carries S2 too: S2's card is
+  // there once, with no line. (R2, Alex's, stays [S2] and is not Jordan's to see.)
+  w.posts = [{ ...POST, shift: 'night-2026-10-02', routes: [POST.routes[0], { ...POST.routes[1], sites: [{ id: 'S1', name: 'PAC' }, { id: 'S2', name: 'TUDOR-TRANSIT' }] }] }];
+  w.zones = w.zones.concat([
+    { id: 'L1', site_id: 'S1', type: 'lot', name: 'Front lot', ring: ring(PAC[0], PAC[1], 60, 50), area_sqft: 30000, rev: 1 },
+    { id: 'L2', site_id: 'S1', type: 'lot', name: 'Back lot', ring: ring(PAC[0], PAC[1] + 0.001, 40, 40), area_sqft: 18200, rev: 1 },
+  ]);
+  return w;
+};
+const lotLineOf = (loc) => loc.locator('.lot-sqft');
+
+test('cards: the lot\'s square footage sits under the address on the Sites card and the Storm card; none without a lot', async ({ page }) => {
+  const w = lotCards();
+  await openStorm(page, w);
+  await expect(lotLineOf(page.locator('[data-shiftsite="S1"]'))).toHaveText('Lot: 48,200 sq ft');
+  await expect(page.locator('[data-shiftsite="S2"]')).toHaveCount(1);   // the card is there...
+  await expect(lotLineOf(page.locator('[data-shiftsite="S2"]'))).toHaveCount(0);   // ...with no line
+  // Under the plow note, which is under the address.
+  expect((await lotLineOf(page.locator('[data-shiftsite="S1"]')).boundingBox()).y).toBeGreaterThan((await page.locator('[data-shiftsite="S1"] .plow-note').boundingBox()).y);
+  await page.click('nav [data-tab="sites"]');
+  await expect(lotLineOf(siteCardOf(page, 'S1'))).toHaveText('Lot: 48,200 sq ft');
+  await expect(lotLineOf(siteCardOf(page, 'S2'))).toHaveCount(0);
+  expect((await lotLineOf(siteCardOf(page, 'S1')).boundingBox()).y).toBeGreaterThan((await siteCardOf(page, 'S1').locator('.plow-note').boundingBox()).y);
+});
+
+test('routes: a route\'s total is the sum over its sites; a route with no lots shows no line', async ({ page }) => {
+  await openStorm(page, lotCards());
+  await page.click('nav [data-tab="routes"]');
+  await expect(lotLineOf(page.locator('.route-card[data-route="R1"]'))).toHaveText('Lot: 48,200 sq ft');
+  await expect(lotLineOf(page.locator('.route-card[data-route="R2"]'))).toHaveCount(0);
+});
+
+test('live window: each truck\'s card carries its route\'s lot total', async ({ page }) => {
+  await openStorm(page, lotCards(), { token: 'tok-matt' });
+  await expect(lotLineOf(page.locator('.live-route[data-liveroute="R1"]'))).toHaveText('Lot: 48,200 sq ft');
+  await expect(lotLineOf(page.locator('.live-route[data-liveroute="R2"]'))).toHaveCount(0);
+});
+
+test('Spanish: the lot line reads Estacionamiento and pies²', async ({ page }) => {
+  await openStorm(page, lotCards());
+  await page.click('#langWrap [data-lang="es"]');
+  await expect(lotLineOf(page.locator('[data-shiftsite="S1"]'))).toHaveText('Estacionamiento: 48,200 pies²');
+});
 
 test('sites: the plow note shows on the card and the storm tab; the edit box saves it (sends plow_note trimmed)', async ({ browser }) => {
   // PAC (S1) has the note and an address; TUDOR-TRANSIT (S2) has no plow_note key at all (a site saved before the field existed).

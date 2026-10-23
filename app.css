@@ -190,7 +190,8 @@ body.has-ref.ref-min #mapbox{height:62vh}
    words fade: the name, the plow note and the status line. Its buttons, Undo, a Problem box and a failure line stay
    full strength (fix round 1): a driver may still need them on a plowed lot. */
 .plow-note{margin-top:6px;font-size:15px}
-.shift-site.done .site-name,.shift-site.done .plow-note,.shift-site.done .lot-line,.shift-site.done .walk-note{opacity:.55}
+.lot-sqft{margin-top:4px}
+.shift-site.done .site-name,.shift-site.done .plow-note,.shift-site.done .lot-sqft,.shift-site.done .lot-line,.shift-site.done .walk-note{opacity:.55}
 .note-err{margin-top:6px;font-size:14px}
 .notebox{margin-top:8px}
 .notebox textarea{width:100%}

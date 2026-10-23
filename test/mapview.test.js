@@ -17,31 +17,34 @@ test('outside MOA, Esri down, moaOk somehow true: still banner', () => assert.st
 // white line with a dark edge. The lot itself has no polygon (the aerial is the lot), and the Shovel crew's
 // sidewalk, hand and heated are gone. Key order is the legend's order.
 const SnowMap = require('../lib/mapview.js');
-test('TYPES: storage, no_touch, push, in that order, with their colours and labels', () => {
+// Lot outlines (10/22/26): a fourth kind, the lot itself, last, in Bootprint's plow green (the "match Bootprint" rule).
+test('TYPES: storage, no_touch, push, lot, in that order, with their colours and labels', () => {
   assert.deepStrictEqual(SnowMap.TYPES, {
     storage: { color: '#7d5ba6', label: 'Snow storage' },
     no_touch: { color: '#e0218a', label: 'Keep clear' },
     push: { color: '#ffffff', edge: '#1a1a1a', label: 'Push snow this way' },
+    lot: { color: '#2d6a2d', label: 'Lot' },
   });
-  assert.deepStrictEqual(Object.keys(SnowMap.TYPES), ['storage', 'no_touch', 'push']);
+  assert.deepStrictEqual(Object.keys(SnowMap.TYPES), ['storage', 'no_touch', 'push', 'lot']);
 });
 
-test('the legend: three rows in TYPES order, the arrow\'s white swatch edged dark so it shows on the white legend', () => {
+test('the legend: four rows in TYPES order, the arrow\'s white swatch edged dark so it shows on the white legend', () => {
   const html = SnowMap.legendHtml();
   const labels = [...html.matchAll(/<\/i>([^<]*)<\/span>/g)].map((m) => m[1]);
-  assert.deepStrictEqual(labels, ['Snow storage', 'Keep clear', 'Push snow this way']);
+  assert.deepStrictEqual(labels, ['Snow storage', 'Keep clear', 'Push snow this way', 'Lot']);
   const swatches = [...html.matchAll(/<i style="([^"]*)"><\/i>/g)].map((m) => m[1]);
-  assert.strictEqual(swatches.length, 3);
+  assert.strictEqual(swatches.length, 4);
   assert.match(swatches[0], /background:#7d5ba6/);
   assert.match(swatches[1], /background:#e0218a/);
   assert.match(swatches[2], /background:#ffffff/);
   assert.match(swatches[2], /#1a1a1a/);                 // the edge colour, on the push row only
-  assert.doesNotMatch(swatches[0] + swatches[1], /#1a1a1a/);
+  assert.match(swatches[3], /background:#2d6a2d/);
+  assert.doesNotMatch(swatches[0] + swatches[1] + swatches[3], /#1a1a1a/);
 });
 
-test('the colour expression names the three kinds and only them, grey for anything else', () => {
+test('the colour expression names the four kinds and only them, grey for anything else', () => {
   assert.deepStrictEqual(SnowMap.typeColour('#888888'),
-    ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', '#888888']);
+    ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#2d6a2d', '#888888']);
 });
 
 // ---- the arrow's head ----
@@ -268,4 +271,58 @@ test('lib/mapview.js loads on its own: it requires no other file', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'lib', 'mapview.js'), 'utf8');
   assert.doesNotMatch(src, /require\(/);
   assert.doesNotMatch(src, /SnowPoints/);
+});
+
+// ---- lot outlines (10/22/26) ----
+// A lot is a Polygon whose first ring is the lot and the rest its holes (the islands), each closed like the ring. A hole
+// the map cannot draw (a hand-edited Sheet row: not an array, or fewer than 3 finite pairs) is left out of the drawing
+// and the ring is drawn; the server's number stands. A lot with no holes is one ring, as a pile is.
+const LOT = { id: 'L1', type: 'lot', name: 'Main lot', ring: [[0, 0], [10, 0], [10, 10], [0, 10]], area_sqft: 48200 };
+const HOLE = [[4, 4], [6, 4], [6, 6], [4, 6]];
+test('featureCollection: a lot is a Polygon with its holes closed; a bad hole is left out; a lot with no holes is one ring; two lots are two features', () => {
+  const withHoles = SnowMap.featureCollection([Object.assign({}, LOT, { holes: [HOLE, 'junk', [[1, 2]]] })]).features;
+  assert.strictEqual(withHoles.length, 1);
+  assert.deepStrictEqual(withHoles[0].properties, { id: 'L1', type: 'lot' });
+  assert.strictEqual(withHoles[0].geometry.type, 'Polygon');
+  assert.strictEqual(withHoles[0].geometry.coordinates.length, 2);
+  assert.deepStrictEqual(withHoles[0].geometry.coordinates[0], [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]);
+  assert.deepStrictEqual(withHoles[0].geometry.coordinates[1], [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]]);
+  const plain = SnowMap.featureCollection([LOT]).features;
+  assert.strictEqual(plain[0].geometry.coordinates.length, 1);
+  const two = SnowMap.featureCollection([LOT, Object.assign({}, LOT, { id: 'L2', ring: [[20, 0], [30, 0], [30, 10]] })]).features;
+  assert.deepStrictEqual(two.map((f) => [f.properties.id, f.properties.type, f.geometry.coordinates.length]), [['L1', 'lot', 1], ['L2', 'lot', 1]]);
+});
+
+// The square footage under a site's address: the sum of its live lot zones' area_sqft (the server's figures), or
+// nothing at all when the site has no lot zone. Never a made-up 0; a stored 0 (a hand-edited row) is printed as the
+// server's own. Worked by hand: 30,000 + 18,200 = 48,200; "Lot: 48,200 sq ft" with the en-US thousands comma.
+test('lotSqft and lotLine: none is null and \'\'; one; two summed; archived skipped; siteIds filter; a bad area counts 0', () => {
+  const lot = (over) => Object.assign({ id: 'L', site_id: 'S1', type: 'lot', ring: LOT.ring, area_sqft: 48200 }, over);
+  assert.strictEqual(SnowMap.lotSqft([]), null);
+  assert.strictEqual(SnowMap.lotLine([]), '');
+  assert.strictEqual(SnowMap.lotSqft([lot({})]), 48200);
+  assert.strictEqual(SnowMap.lotLine([lot({})]), 'Lot: 48,200 sq ft');
+  assert.strictEqual(SnowMap.lotSqft([lot({ area_sqft: 30000 }), lot({ id: 'L2', area_sqft: 18200 })]), 48200);
+  assert.strictEqual(SnowMap.lotSqft([lot({ archived: true })]), null);
+  assert.strictEqual(SnowMap.lotSqft([lot({ site_id: 'S2' })], ['S1']), null);
+  assert.strictEqual(SnowMap.lotSqft([lot({ site_id: 'S2' }), lot({ id: 'L2', site_id: 'S1', area_sqft: 100 })], ['S1']), 100);
+  assert.strictEqual(SnowMap.lotSqft([lot({ area_sqft: 'x' })]), 0);
+  assert.strictEqual(SnowMap.lotLine([lot({ area_sqft: 'x' })]), 'Lot: 0 sq ft');
+  assert.strictEqual(SnowMap.lotSqft([{ id: 'Z1', site_id: 'S1', type: 'storage', ring: LOT.ring, area_sqft: 1076 }]), null);
+});
+
+// A tap's distance to a zone, in pixels (toPx maps a corner to [x, y]; here the identity). An arrow as pxDistance has
+// it (open); an area 0 inside its ring; a lot 0 inside its ring and outside every hole, and inside a hole the distance
+// to that hole's nearest edge, which is where the lot's fill begins again. Worked by hand on a 100 x 100 lot with a
+// 20 x 20 hole at its centre (40..60): (20, 20) is in the body -> 0; (50, 50) is the hole's centre, 10 from every
+// edge -> 10; (120, 50) is 20 past the lot's east edge -> 20.
+test('zoneDistance: a lot is 0 in its body, the hole\'s edge distance inside an island, the edge distance outside', () => {
+  const lot = { id: 'L', type: 'lot', ring: [[0, 0], [100, 0], [100, 100], [0, 100]], holes: [[[40, 40], [60, 40], [60, 60], [40, 60]]] };
+  const id = (c) => [c[0], c[1]];
+  assert.strictEqual(SnowMap.zoneDistance([20, 20], lot, id), 0);
+  assert.ok(Math.abs(SnowMap.zoneDistance([50, 50], lot, id) - 10) < 1e-9);
+  assert.ok(Math.abs(SnowMap.zoneDistance([120, 50], lot, id) - 20) < 1e-9);
+  // A pile is as before: 0 inside; an arrow is an open line (its two corners, the point 4 above the middle -> 4).
+  assert.strictEqual(SnowMap.zoneDistance([5, 5], { id: 'P', type: 'storage', ring: [[0, 0], [10, 0], [10, 10], [0, 10]] }, id), 0);
+  assert.ok(Math.abs(SnowMap.zoneDistance([5, 4], { id: 'A', type: 'push', ring: [[0, 0], [10, 0]] }, id) - 4) < 1e-9);
 });

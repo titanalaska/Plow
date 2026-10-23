@@ -61,6 +61,11 @@ test('the lot: Plowed, Not plowed, Problem, the refusal, Lot, and the handoff da
   assert.equal(Es.translateString(' · Not plowed · Night: problem'), ' · Sin quitar · Noche: problema');
   assert.equal(Es.translateString(' · Plowed · Night: plowed'), ' · Quitado · Noche: quitado');
   assert.equal(Es.translateString(' · Not plowed · Problem: gate locked'), ' · Sin quitar · Problema: gate locked');
+  // Lot outlines (10/22/26): the square-footage line under a site's address on the crew's cards, and the unit on a
+  // zone's card ("≈ 1,076 sq ft"). The number and the colon are the engine's own; "sq ft" is a row.
+  assert.ok('sq ft' in Es.ES, 'a row: sq ft');
+  assert.equal(Es.translateString('Lot: 48,200 sq ft'), 'Estacionamiento: 48,200 pies²');
+  assert.equal(Es.translateString('≈ 1,076 sq ft'), '≈ 1,076 pies²');
 });
 
 test('every row has a Spanish value different from its key and no row is blank', () => {

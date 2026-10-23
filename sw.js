@@ -6,10 +6,10 @@
 // titanalaska.github.io carries every Titan app on one origin, so the Cache API
 // is shared: this worker only ever deletes its OWN old versions
 // (titan-plow-shell-*), never titan-snow-* (Shovel Command's), wolf-*, groundwork-* or anyone else's.
-var CACHE_VERSION = 'titan-plow-shell-1';
+var CACHE_VERSION = 'titan-plow-shell-2';
 // Map code is in the shell so a map still opens with no signal (zones on a
 // plain background). The aerial TILES are never cached: other origins pass by.
-var SHELL = ['./', 'index.html', 'app.css', 'lib/config.js', 'lib/forms.js', 'lib/api.js', 'lib/geo.js',
+var SHELL = ['./', 'index.html', 'app.css', 'lib/config.js', 'lib/forms.js', 'lib/api.js', 'lib/geo.js', 'lib/lot.js',
   'lib/mapview.js', 'lib/bpimport.js', 'lib/mapedit.js', 'lib/time.js', 'lib/board.js', 'lib/history.js',
   'lib/warnings.js', 'lib/pairing.js', 'lib/boardui.js', 'lib/rosterui.js', 'lib/shiftlog.js', 'lib/livesum.js', 'lib/routesheet.js', 'lib/handoff.js', 'lib/csv.js', 'lib/btnote.js', 'lib/shiftlogui.js', 'lib/weather.js', 'lib/callout.js', 'lib/snowmap.js', 'lib/share.js', 'lib/es.js', 'lib/pull.js', 'lib/app.js', 'vendor/maplibre-gl.js', 'vendor/maplibre-gl.css',
   'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];

@@ -1,5 +1,6 @@
 // Bootprint -> Plow Command zones (Matt, 10/1/26: trace in Bootprint, import here). Plow Command (10/21/26) brings
-// piles only: a storage surface becomes a storage zone; walks, hand work, lots and cut-outs stay out and are counted.
+// piles and, from 10/22/26, lots: a storage surface becomes a storage zone, the plow surface a lot with its cut-outs as
+// holes; walks, hand work and stray cut-outs stay out and are counted.
 // Expected values are worked out on paper in the comments, never pasted from a run.
 const test = require('node:test');
 const assert = require('node:assert');
@@ -32,7 +33,7 @@ test('walks and hand work stay out and are counted apart: they are the Shovel cr
   const r = BP.convertJob(job([zone(1, 'area', 'walk', SQUARE), zone(2, 'area', 'hand', SQUARE), zone(3, 'area', 'walk', SQUARE)]), []);
   assert.deepStrictEqual(r.zones, []);
   // 2 walks (1 and 3), 1 hand (2); nothing else.
-  assert.deepStrictEqual(r.skipped, { walks: 2, hands: 1, lots: 0, cutouts: 0, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0 });
+  assert.deepStrictEqual(r.skipped, { walks: 2, hands: 1, cutouts: 0, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0, other: 0 });
 });
 
 test('a walk or hand is left out whatever its shape: a run with no width, an unfinished outline', () => {
@@ -41,17 +42,70 @@ test('a walk or hand is left out whatever its shape: a run with no width, an unf
   const r = BP.convertJob(job([zone(1, 'line', 'walk', [pin(0, 0), pin(30, 0)], ''), zone(2, 'area', 'walk', SQUARE.slice(0, 2)),
     zone(3, 'line', 'hand', [pin(0, 0), pin(20, 0), pin(1, 0.5)], '6'), zone(4, 'line', 'hand', [pin(0, 0)], '6')]), []);
   assert.deepStrictEqual(r.zones, []);
-  assert.deepStrictEqual(r.skipped, { walks: 2, hands: 2, lots: 0, cutouts: 0, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0 });
+  assert.deepStrictEqual(r.skipped, { walks: 2, hands: 2, cutouts: 0, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0, other: 0 });
 });
 
-test('lots and cut-outs are skipped and counted; storage comes in as snow storage', () => {
+// Lot outlines (10/22/26): the plow surface comes across as a lot, and a cut-out inside a lot as its island (hole).
+test('a plow area and an untyped area come in as lots; a cut-out inside no lot is counted; storage comes in as snow storage', () => {
   const r = BP.convertJob(job([zone(1, 'area', 'plow', SQUARE), zone(2, 'area', 'storage', SQUARE),
     zone(3, 'cut', 'walk', SQUARE), zone(4, 'area', undefined, SQUARE), zone(5, 'cut', 'storage', SQUARE)]), []);
-  // Matt, 10/4/26: a pile on the map tells the Bobcat operator where snow goes.
-  assert.deepStrictEqual(r.zones.map((z) => [z.from, z.type]), [['bootprint:J1:2', 'storage']]);
-  // A zone with no surface is an older or summer job: Bootprint's default is plow. A cut-out is a cut-out whatever its
-  // surface (3 a walk's, 5 a pile's), never a walk: 2 lots (1, 4), 2 cut-outs (3, 5), no walks.
-  assert.deepStrictEqual(r.skipped, { walks: 0, hands: 0, lots: 2, cutouts: 2, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0 });
+  // In job order: 1 a lot (Matt traces lots as the plow surface), 2 a pile, 4 a lot (a zone with no surface is an older or
+  // summer job: Bootprint's default is plow). Neither lot has holes: a cut-out with the lot's own corners is not INSIDE
+  // it (every corner sits on its line), so cut-outs 3 and 5 are counted, whatever their surface.
+  assert.deepStrictEqual(r.zones.map((z) => [z.from, z.type, 'holes' in z]), [['bootprint:J1:1', 'lot', false], ['bootprint:J1:2', 'storage', false], ['bootprint:J1:4', 'lot', false]]);
+  assert.deepStrictEqual(r.skipped, { walks: 0, hands: 0, cutouts: 2, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0, other: 0 });
+  assert.strictEqual(r.islands, 0);
+});
+
+// A lot 100 m x 60 m (6,000 m2) with two islands: A 10 x 5 (50 m2) and B 20 x 10 (200 m2): net 5,750 m2 on paper.
+const LOT = [pin(0, 0), pin(100, 0), pin(100, 60), pin(0, 60)];
+const ISLAND_A = [pin(10, 10), pin(20, 10), pin(20, 15), pin(10, 15)];
+const ISLAND_B = [pin(40, 40), pin(60, 40), pin(60, 50), pin(40, 50)];
+const OUTSIDE = [pin(200, 0), pin(210, 0), pin(210, 5), pin(200, 5)];           // 100 m east of the lot
+const STRADDLES = [pin(95, 10), pin(105, 10), pin(105, 15), pin(95, 15)];       // half in, half out over the east edge
+const OVERLAPS_A = [pin(15, 12), pin(25, 12), pin(25, 18), pin(15, 18)];        // its west half lies inside A
+const PILE = [pin(70, 10), pin(80, 10), pin(80, 15), pin(70, 15)];
+const IN_PILE = [pin(72, 11), pin(74, 11), pin(74, 13), pin(72, 13)];           // inside the pile, and inside the lot too
+const ll = (pins) => pins.map((p) => [p.lng, p.lat]);
+const Lot = require('../lib/lot.js');
+
+test('a cut-out inside a lot becomes its hole, in job order; two islands; the lot\'s net area is on paper 5,750 m2', () => {
+  const r = BP.convertJob(job([zone(1, 'area', 'plow', LOT), zone(2, 'cut', 'plow', ISLAND_A), zone(3, 'cut', 'walk', ISLAND_B)]), []);
+  assert.strictEqual(r.zones.length, 1);
+  const z = r.zones[0];
+  assert.strictEqual(z.type, 'lot');
+  assert.deepStrictEqual(z.holes, [ll(ISLAND_A), ll(ISLAND_B)]);   // a cut-out's surface means nothing: it is a hole
+  assert.strictEqual(r.islands, 2);
+  assert.deepStrictEqual(r.skipped, { walks: 0, hands: 0, cutouts: 0, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0, other: 0 });
+  assert.ok(Math.abs(Lot.areaSqm(z.ring, z.holes) - 5750) < 1, Lot.areaSqm(z.ring, z.holes));
+});
+
+test('a cut-out outside, straddling, overlapping a taken island, or inside a pile is counted, never a hole', () => {
+  const r = BP.convertJob(job([zone(1, 'area', 'plow', LOT), zone(2, 'cut', 'plow', ISLAND_A), zone(3, 'cut', 'plow', OUTSIDE),
+    zone(4, 'cut', 'plow', STRADDLES), zone(5, 'cut', 'plow', OVERLAPS_A), zone(6, 'area', 'storage', PILE), zone(7, 'cut', 'storage', IN_PILE)]), []);
+  // The lot keeps A and IN_PILE: IN_PILE sits inside the pile, but inside the lot too, and Bootprint takes a cut-out off
+  // every area it lies in, the lot's plow figure included, so the lot's number is net of it here as well (ruling,
+  // 10/22/26); the pile itself has no holes and keeps its whole area. OUTSIDE is in no lot; STRADDLES crosses the lot's
+  // edge; OVERLAPS_A is inside the lot but not apart from A, already taken. Three counted.
+  assert.deepStrictEqual(r.zones.map((z) => [z.type, z.holes]), [['lot', [ll(ISLAND_A), ll(IN_PILE)]], ['storage', undefined]]);
+  assert.strictEqual(r.skipped.cutouts, 3);
+  assert.strictEqual(r.islands, 2);
+});
+
+test('a cut-out whose lot was imported before follows it: counted under already, not as a cut-out', () => {
+  const r = BP.convertJob(job([zone(1, 'area', 'plow', LOT), zone(2, 'cut', 'plow', ISLAND_A)]), ['bootprint:J1:1']);
+  assert.deepStrictEqual(r.zones, []);
+  assert.deepStrictEqual(r.skipped, { walks: 0, hands: 0, cutouts: 0, noWidth: 0, tooSharp: 0, already: 1, unfinished: 0, other: 0 });
+  assert.strictEqual(r.islands, 0);
+});
+
+test('a plow run with a width is a lot strip; with none it is skipped', () => {
+  // A plowed lane drawn as a 50 m line, 24 ft (7.3152 m) wide: 365.76 m2, typed lot, no holes.
+  const r = BP.convertJob(job([zone(1, 'line', 'plow', [pin(0, 0), pin(50, 0)], '24')]), []);
+  assert.deepStrictEqual(r.zones.map((z) => [z.type, 'holes' in z]), [['lot', false]]);
+  assert.ok(Math.abs(sqm(r.zones[0].ring) - 365.76) < 0.5, sqm(r.zones[0].ring));
+  const none = BP.convertJob(job([zone(1, 'line', 'plow', [pin(0, 0), pin(50, 0)], '')]), []);
+  assert.deepStrictEqual([none.zones, none.skipped.noWidth], [[], 1]);
 });
 
 // ANMC (10/4/26, the zone-types spec): one import brought "26 walks/hand zones + 3 piles". The real export is a
@@ -80,7 +134,7 @@ test('an ANMC-sized job: its 3 piles come in, its 26 walks and hand stay out, ev
   assert.deepStrictEqual(r.zones.map((z) => [z.name, z.type, z.from]), [
     ['Snow pile 1', 'storage', 'bootprint:ANMC-STANDIN:28'], ['Snow pile 2', 'storage', 'bootprint:ANMC-STANDIN:29'],
     ['Snow pile 3', 'storage', 'bootprint:ANMC-STANDIN:30']]);
-  assert.deepStrictEqual(r.skipped, { walks: 11, hands: 15, lots: 0, cutouts: 2, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0 });
+  assert.deepStrictEqual(r.skipped, { walks: 11, hands: 15, cutouts: 2, noWidth: 0, tooSharp: 0, already: 0, unfinished: 0, other: 0 });
   assert.strictEqual(r.skipped.walks + r.skipped.hands, 26);
   // Each pile keeps its corners: 8 m x 4 m = 32 m2.
   r.zones.forEach((z) => assert.ok(Math.abs(sqm(z.ring) - 32) < 0.2, sqm(z.ring)));

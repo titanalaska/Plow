@@ -96,15 +96,15 @@ test('a body that is not a reply with a boolean ok keeps its own refusal', async
   assert.deepEqual(plain(r), { ok: false, code: 'error', reason: 'Unexpected reply from the server.' });
 });
 
-// Plow Command (10/21/26): this phone and its backend share one label, plow-1 (lib/config.js EXPECTED_BACKEND, the script's
+// Plow Command (10/21/26): this phone and its backend share one label, plow-2 (lib/config.js EXPECTED_BACKEND, the script's
 // VERSION). If only one of them moves, every reply is a "version mismatch" and the red banner shows on every phone, so the
 // two are read side by side. The backend repo sits beside this one (no remote); not there, the phone's half is still checked.
-test('the phone expects plow-1, and the backend beside it answers plow-1', () => {
+test('the phone expects plow-2, and the backend beside it answers plow-2', () => {
   const config = fs.readFileSync(path.join(__dirname, '..', 'lib', 'config.js'), 'utf8');
-  assert.equal(/EXPECTED_BACKEND: '([^']+)'/.exec(config)[1], 'plow-1');
+  assert.equal(/EXPECTED_BACKEND: '([^']+)'/.exec(config)[1], 'plow-2');
   const backend = path.join(__dirname, '..', '..', 'plow-command-script', 'Code.js');
   if (!fs.existsSync(backend)) return;
-  assert.equal(/var VERSION = '([^']+)';/.exec(fs.readFileSync(backend, 'utf8'))[1], 'plow-1');
+  assert.equal(/var VERSION = '([^']+)';/.exec(fs.readFileSync(backend, 'utf8'))[1], 'plow-2');
 });
 
 // Final wave I3 (10/22/26): the first Pull's apply writes ~120 records and can take longer than the 45 s every other call
