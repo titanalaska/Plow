@@ -74,6 +74,12 @@ says so. Plain lng/lat arithmetic (containment and crossing are affine questions
 The server's `validate` and the phone's import and editor all ask `holeProblem`, so the three refuse in the same
 words.
 
+**An import lands once** (the Blood Bank double import, 10/23/26: two phones, each with a stale import preview,
+each tapped Add, and the phone's own "already imported" check cannot see another phone's preview). A NEW zone (no
+id) that carries `from` (the import's mark, `bootprint:<job>:<zone>`) and matches a LIVE zone on the same site IS
+that zone: `saveZone` answers the existing record and writes nothing. An archived twin does not count (archive, then
+import again, on purpose); a record with an id is an edit and never meets this. No change of shape: VERSION stays.
+
 **The Pull is untouched.** `PULLED_TYPES` stays `['storage', 'no_touch']`; the plow-side type guard already skips
 any plow copy whose type is not pulled, so a pulled pile Matt re-types `lot` is left alone from then on, and a
 `PZ-` lot has no Shovel twin to match. A test says so in both directions: a lot is never added, updated, listed
@@ -118,8 +124,10 @@ a cut-out off every area it lies in, the lot's plow figure included; ruling 10/2
 and keeps its whole area.
 
 `skipped.lots` goes: lots come in now. The result gains `islands`, the holes carried. The summary reads
-`2 lots (3 islands) and 4 piles to add`, `Left out: 2 walks, 1 cut-out outside any lot`; the Add button
-`Add 2 lots and 4 piles`. The preview draws lots in their colour with their holes (`previewData` colours from
+`2 lots (3 islands) and 4 piles to add`, `Left out: 2 walks, 1 cut-out (outside a lot, over its edge, over another
+island, or crossing itself)` (one count, every reason named; 10/23/26); the Add button `Add 2 lots and 4 piles`. The
+cut-out loop asks `SnowLot.holeProblem`, the server's own question, so a cut-out the server would refuse (one that
+crosses itself) is counted here and the lot and its sound islands still come in (10/23/26). The preview draws lots in their colour with their holes (`previewData` colours from
 `typeColour`, so a kind can never be missing from it).
 
 The server validates every imported lot again (section 1) and the import shows its words on a refusal, as it does

@@ -92,6 +92,20 @@ test('a cut-out outside, straddling, overlapping a taken island, or inside a pil
   assert.strictEqual(r.islands, 2);
 });
 
+// A cut-out that crosses itself (a pin tapped out of order) would ride in as a hole the server refuses ("A hole crosses
+// itself"), stopping the whole import at the lot. The import asks the same question the server does (SnowLot.holeProblem,
+// spec §1) and leaves such a cut-out out, counted; the lot and its sound islands still come in. BOWTIE_A is island A's
+// corners in the order SW, NE, SE, NW: its two diagonals cross.
+test('a self-crossing cut-out inside the lot is counted, never a hole; the lot and its other island still come in', () => {
+  const BOWTIE_A = [ISLAND_A[0], ISLAND_A[2], ISLAND_A[1], ISLAND_A[3]];
+  const r = BP.convertJob(job([zone(1, 'area', 'plow', LOT), zone(2, 'cut', 'plow', BOWTIE_A), zone(3, 'cut', 'plow', ISLAND_B)]), []);
+  assert.deepStrictEqual(r.zones.map((z) => [z.type, z.holes]), [['lot', [ll(ISLAND_B)]]]);
+  assert.strictEqual(r.skipped.cutouts, 1);
+  assert.strictEqual(r.islands, 1);
+  // Every hole carried is one the server accepts, in its words.
+  r.zones[0].holes.forEach((h, i) => assert.strictEqual(Lot.holeProblem(h, r.zones[0].ring, r.zones[0].holes.slice(0, i)), ''));
+});
+
 test('a cut-out whose lot was imported before follows it: counted under already, not as a cut-out', () => {
   const r = BP.convertJob(job([zone(1, 'area', 'plow', LOT), zone(2, 'cut', 'plow', ISLAND_A)]), ['bootprint:J1:1']);
   assert.deepStrictEqual(r.zones, []);

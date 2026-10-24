@@ -30,23 +30,23 @@ test('the shell is cached, Apps Script never is, and other apps\' caches survive
   await page.route((u) => u.href.includes('script.google.com'), (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: false, code: 'signin', reason: 'Sign in', version: 'pairings-1' }) }));
   await page.goto('http://localhost:' + PORT + '/index.html');
-  await page.evaluate(async () => { await caches.open('wolf-beds-v2'); await caches.open('groundwork-shell-v34'); await caches.open('titan-plow-shell-1'); await caches.open('titan-plow-shell-2'); await caches.open('titan-plow-shell-4'); await caches.open('titan-plow-shell-5'); await caches.open('titan-plow-shell-6'); await caches.open('titan-plow-shell-7'); await caches.open('titan-plow-shell-8'); await caches.open('titan-plow-shell-9'); await caches.open('titan-plow-shell-10'); await caches.open('titan-plow-shell-11'); await caches.open('titan-plow-shell-12'); await caches.open('titan-plow-shell-13'); await caches.open('titan-plow-shell-14'); await caches.open('titan-plow-shell-15'); await caches.open('titan-plow-shell-17'); await caches.open('titan-plow-shell-18'); await caches.open('titan-plow-shell-19'); await caches.open('titan-plow-shell-20'); await caches.open('titan-plow-shell-21'); await caches.open('titan-plow-shell-22'); await caches.open('titan-plow-shell-23'); await caches.open('titan-plow-shell-24'); await caches.open('titan-plow-shell-25'); await caches.open('titan-plow-shell-40'); });
+  await page.evaluate(async () => { await caches.open('wolf-beds-v2'); await caches.open('groundwork-shell-v34'); await caches.open('titan-plow-shell-1'); await caches.open('titan-plow-shell-2'); await caches.open('titan-plow-shell-3'); await caches.open('titan-plow-shell-5'); await caches.open('titan-plow-shell-6'); await caches.open('titan-plow-shell-7'); await caches.open('titan-plow-shell-8'); await caches.open('titan-plow-shell-9'); await caches.open('titan-plow-shell-10'); await caches.open('titan-plow-shell-11'); await caches.open('titan-plow-shell-12'); await caches.open('titan-plow-shell-13'); await caches.open('titan-plow-shell-14'); await caches.open('titan-plow-shell-15'); await caches.open('titan-plow-shell-17'); await caches.open('titan-plow-shell-18'); await caches.open('titan-plow-shell-19'); await caches.open('titan-plow-shell-20'); await caches.open('titan-plow-shell-21'); await caches.open('titan-plow-shell-22'); await caches.open('titan-plow-shell-23'); await caches.open('titan-plow-shell-24'); await caches.open('titan-plow-shell-25'); await caches.open('titan-plow-shell-40'); });
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.waitForTimeout(500);
   const state = await page.evaluate(async () => {
     const names = await caches.keys();
-    const shell = await caches.open('titan-plow-shell-3');
+    const shell = await caches.open('titan-plow-shell-4');
     const urls = (await shell.keys()).map((r) => r.url);
     return { names, urls };
   });
-  expect(state.names).toContain('titan-plow-shell-3');
+  expect(state.names).toContain('titan-plow-shell-4');
   expect(state.names).toContain('wolf-beds-v2');
   expect(state.names).toContain('groundwork-shell-v34');
   expect(state.names).not.toContain('titan-plow-shell-1');          // its own old versions are cleaned up (shell 1 was live until 10/22/26)
   expect(state.names).not.toContain('titan-plow-shell-2');
-  expect(state.names).not.toContain('titan-plow-shell-4');
+  expect(state.names).not.toContain('titan-plow-shell-3');
   expect(state.names).not.toContain('titan-plow-shell-5');
   expect(state.names).not.toContain('titan-plow-shell-6');
   expect(state.names).not.toContain('titan-plow-shell-7');
@@ -89,7 +89,7 @@ test('activating this worker deletes its own old shell cache and leaves Shovel C
   // One origin, one Cache API: a driver who also has Shovel Command installed has its shell cache right
   // beside ours. Both are made BEFORE this worker exists (on a page that does not register it), so the
   // activate step is what meets them: titan-plow-shell-0 is ours and old -> gone; titan-snow-shell-41 is
-  // Shovel Command's current shell -> must survive; the current titan-plow-shell-3 is there.
+  // Shovel Command's current shell -> must survive; the current titan-plow-shell-4 is there.
   await page.route((u) => u.href.includes('script.google.com'), (route) => route.abort());
   await page.goto('http://localhost:' + PORT + '/lib/config.js'); // same origin, no service worker registered
   await page.evaluate(async () => { await caches.open('titan-snow-shell-41'); await caches.open('titan-plow-shell-0'); });
@@ -101,7 +101,7 @@ test('activating this worker deletes its own old shell cache and leaves Shovel C
   const names = await page.evaluate(() => caches.keys());
   expect(names).toContain('titan-snow-shell-41');
   expect(names).not.toContain('titan-plow-shell-0');
-  expect(names).toContain('titan-plow-shell-3');
+  expect(names).toContain('titan-plow-shell-4');
 });
 
 test('aerial photo tiles pass straight through and are never cached', async ({ page }) => {

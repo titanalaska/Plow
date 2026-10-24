@@ -2105,7 +2105,7 @@ test('import: a lot\'s islands ride along as holes and reach the server; a stray
   await expect(page.locator('#bp_jobs [data-bpjob]').first()).toContainText('1 lot (1 island)');
   await page.locator('#bp_jobs [data-bpjob]').first().click();
   await expect(page.locator('#bp_sum b')).toHaveText('1 lot (1 island) to add');
-  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 cut-out outside any lot');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 cut-out (outside a lot, over its edge, over another island, or crossing itself)');
   // The preview's lot carries its island as a second ring.
   await expect.poll(() => page.evaluate(() => window.SnowMapView.getSource('draft')._data.features.map((f) => [f.properties.type, f.geometry.coordinates.length])))
     .toEqual([['lot', 2]]);
@@ -2169,6 +2169,31 @@ test('Done, New zone and a tab mid-import are refused with a word, and every zon
   await expect(page.locator('#toast')).toContainText('Added 1 lot and 2 piles from Bootprint', { timeout: 5000 });
   expect(zoneSaves(calls)).toBe(3);
   await expect(page.locator('#ed_new')).toBeVisible();    // still in the editor, on the map
+});
+
+// A file that arrives mid-import without the label's click (a change event dispatched by hand, as a script or an odd
+// browser could) is refused by readBootprint in the busy words: a new panel then would count only the zones landed so
+// far as imported and add the rest again. (10/23/26; the label's own click was refused already, the test above.)
+test('a file arriving mid-import without the label is refused with the busy word, and nothing is added twice', async ({ page }) => {
+  const calls = await importSlowly(page);
+  await page.evaluate(() => { document.getElementById('toast').style.display = 'none'; }); // the next toast must be a new one
+  await page.evaluate((json) => {
+    const input = document.getElementById('ed_bpfile'), dt = new DataTransfer();
+    dt.items.add(new File([json], 'bootprint-library-again.json', { type: 'application/json' }));
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  }, bpExport().toString());
+  await expect(page.locator('#toast')).toBeVisible();
+  await expect(page.locator('#toast')).toContainText('Still adding zones');
+  await expect(page.locator('#bp_add')).toHaveText(/Adding \d of 3…/);   // the running import's panel is untouched
+  await expect(page.locator('#toast')).toContainText('Added 1 lot and 2 piles from Bootprint', { timeout: 6000 });
+  expect(zoneSaves(calls)).toBe(3);
+  // Afterwards the same file reads as already imported, every zone.
+  await importFile(page, bpExport());
+  await page.locator('#bp_jobs [data-bpjob]').first().click();
+  await expect(page.locator('#bp_sum b')).toHaveText('Nothing to add');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 walk, 3 already imported');
+  expect(zoneSaves(calls)).toBe(3);
 });
 
 test('the phone\'s Back and ‹ Back mid-import leave the map open, and the import finishes', async ({ page }) => {
