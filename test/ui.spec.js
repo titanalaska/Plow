@@ -2090,6 +2090,51 @@ test('importing the same Bootprint job twice adds nothing the second time', asyn
   await expect(page.locator('#bp_add')).toBeDisabled();
 });
 
+// The pulled pile (Blood Bank and VCA, 10/23-24): the Pull from Shovel Command brings a site's piles without a `from`, so "already
+// imported" cannot see them and every import re-added them. mapWorld's Z1 and Z2 are such piles (storage, no from) and Z3 is a
+// keep-clear outline. The job, on paper: Z1's corners as a pile and Z2's corners as a pile (both are on the map: left out, 2),
+// Z3's corners as a pile (a keep-clear outline is not a pile: it comes in), a new pile and a lot. In: pile 3, pile 4, the lot =
+// 1 lot and 2 piles, in job order; only those three reach the server.
+test('import: a pile already on the map (no from) is left out and named; a pile with a keep-clear outline\'s corners comes in', async ({ page }) => {
+  const world = mapWorld();
+  const calls = await adminMap(page, world);
+  await page.click('#mapedit');
+  const pinsOf = (id) => world.zones.find((z) => z.id === id).ring.map(([lng, lat]) => ({ lng, lat, accuracy: 0 }));
+  const zs = [
+    { id: 1, name: 'Main pile', mode: 'area', surface: 'storage', pins: pinsOf('Z1'), widthFt: '' },
+    { id: 2, name: 'Walk pile', mode: 'area', surface: 'storage', pins: pinsOf('Z2'), widthFt: '' },
+    { id: 3, name: 'Ski pile', mode: 'area', surface: 'storage', pins: pinsOf('Z3'), widthFt: '' },
+    { id: 4, name: 'New pile', mode: 'area', surface: 'storage', pins: bpRect(-80, -20), widthFt: '' },
+    { id: 5, name: 'Lot', mode: 'area', surface: 'plow', pins: bpRect(-80, -60), widthFt: '' },
+  ];
+  await importFile(page, Buffer.from(JSON.stringify({ schema: 'bootprint-library-export', version: 1, jobs: [{ id: 'NEAR', name: 'Near PAC', zones: zs }] })));
+  await page.locator('#bp_jobs [data-bpjob]').first().click();
+  await expect(page.locator('#bp_sum b')).toHaveText('1 lot and 2 piles to add');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 2 piles already on the map');
+  await expect(page.locator('#bp_add')).toHaveText('Add 1 lot and 2 piles');
+  // The preview draws only what will come in.
+  await expect.poll(() => page.evaluate(() => window.SnowMapView.getSource('draft')._data.features.map((f) => f.properties.type)))
+    .toEqual(['storage', 'storage', 'lot']);
+  await page.click('#bp_add');
+  await expect.poll(() => calls.filter((c) => c.body.action === 'saveZone').length).toBe(3);
+  expect(calls.filter((c) => c.body.action === 'saveZone').map((c) => [c.body.record.name, c.body.record.type, c.body.record.from])).toEqual([
+    ['Ski pile', 'storage', 'bootprint:NEAR:3'], ['New pile', 'storage', 'bootprint:NEAR:4'], ['Lot', 'lot', 'bootprint:NEAR:5']]);
+  await expect(page.locator('#toast')).toContainText('Added 1 lot and 2 piles from Bootprint');
+});
+
+test('import: when every pile of the job is already on the map there is nothing to add, and it says one pile', async ({ page }) => {
+  const world = mapWorld();
+  await adminMap(page, world);
+  await page.click('#mapedit');
+  const pins = world.zones.find((z) => z.id === 'Z1').ring.map(([lng, lat]) => ({ lng, lat, accuracy: 0 }));
+  await importFile(page, Buffer.from(JSON.stringify({ schema: 'bootprint-library-export', version: 1,
+    jobs: [{ id: 'NEAR', name: 'Near PAC', zones: [{ id: 1, name: 'Main pile', mode: 'area', surface: 'storage', pins, widthFt: '' }] }] })));
+  await page.locator('#bp_jobs [data-bpjob]').first().click();
+  await expect(page.locator('#bp_sum b')).toHaveText('Nothing to add');
+  await expect(page.locator('#bp_sum .muted')).toHaveText('Left out: 1 pile already on the map');
+  await expect(page.locator('#bp_add')).toBeDisabled();
+});
+
 // Lot outlines (10/22/26): a lot traced in Bootprint with an island as a cut-out comes in with that island as its hole,
 // which reaches the server in the record; a cut-out inside no lot is left out and named. The job (in metres from PAC):
 // a 100 m x 60 m lot, a 10 m x 5 m island inside it, and a cut-out 100 m east of the lot.

@@ -80,6 +80,23 @@ id) that carries `from` (the import's mark, `bootprint:<job>:<zone>`) and matche
 that zone: `saveZone` answers the existing record and writes nothing. An archived twin does not count (archive, then
 import again, on purpose); a record with an id is an edit and never meets this. No change of shape: VERSION stays.
 
+**A pulled pile is that pile** (Blood Bank and VCA, 10/23-24). The Pull brings a site's piles in under their Shovel
+ids and without a `from`, so the rule above cannot see them, and every import of the job added each pile a second
+time, for Matt to archive by hand. A NEW pile (storage, no id) that carries `from` and whose outline is a LIVE pile's
+on the same site IS that pile: `saveZone` answers the existing record and writes nothing (in `write_`, beside the
+twin-by-`from` rule, so a second phone cannot bring it either). "Whose outline is" is `SnowLot.sameRing`, shared in
+`lot.js`: 3 or more corners, the same count, the same corners in the same order, each corner's lng and lat equal after
+rounding to 7 decimals (a step of about 1 cm: Bootprint keeps a pin's lng/lat exactly, so a re-export of the same pins
+meets it to the digit, and the grid only forgives a copy that lost digits in a Sheet or a phone). It is not a
+distance, an overlap or a resemblance, and it does not turn or reverse the ring, so a real second pile beside the
+first always lands. Only a pile meets it: a lot, a keep-clear outline, an archived pile, another site's pile, a pile
+drawn by hand (no `from`) and an edit (a record with an id) never do. The phone asks the same question:
+`convertJob(job, existing, piles)` takes the corners of the site's live piles, leaves a matching pile out and counts
+it (`skipped.onMap`; `Left out: 2 piles already on the map`), so the preview and the Add button say what will really
+land, and a cut-out inside a pile left out is still the lot's hole. No change of shape: VERSION stays, shell 5. Known
+limit: a pulled pile whose ring Matt later moves in Shovel Command no longer matches, and the next import brings its
+Bootprint outline again.
+
 **The Pull is untouched.** `PULLED_TYPES` stays `['storage', 'no_touch']`; the plow-side type guard already skips
 any plow copy whose type is not pulled, so a pulled pile Matt re-types `lot` is left alone from then on, and a
 `PZ-` lot has no Shovel twin to match. A test says so in both directions: a lot is never added, updated, listed
