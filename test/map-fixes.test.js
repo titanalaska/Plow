@@ -11,7 +11,7 @@ const SnowMap = require('../lib/mapview.js');
 // colour, the fallback last. A feature with no type (the outline being drawn) gets the fallback.
 test('typeColour: a match on the feature type, every type in legend order, the fallback last', () => {
   assert.deepEqual(SnowMap.typeColour('#ffffff'), ['match', ['get', 'type'],
-    'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#2d6a2d',   // the lot (10/22/26) last
+    'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#f57c00',   // the lot (10/22/26) last; orange since 10/26/26 (Matt: the green blended with the landscaping)
     '#ffffff']);
 });
 

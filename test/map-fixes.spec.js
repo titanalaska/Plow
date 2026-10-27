@@ -236,9 +236,10 @@ test('the import preview carries each outline\'s type, and the draft layer colou
     zones: window.SnowMapView.getPaintProperty('zones-line', 'line-color'),
     table: Object.fromEntries(Object.keys(window.SnowMap.TYPES).map((k) => [k, window.SnowMap.TYPES[k].color])),
   }));
-  // The plow map's four kinds (spec, 10/21/26, the lot 10/22/26; the areas in Bootprint's colours), read off the table
-  // the legend is drawn from. This job has no plow area, so its one previewed outline is a pile, purple.
-  expect(paint.table).toEqual({ storage: '#7d5ba6', no_touch: '#e0218a', push: '#ffffff', lot: '#2d6a2d' });
+  // The plow map's four kinds (spec, 10/21/26, the lot 10/22/26; the areas in Bootprint's colours, the lot orange #f57c00
+  // since 10/26/26), read off the table the legend is drawn from. This job has no plow area, so its one previewed
+  // outline is a pile, purple.
+  expect(paint.table).toEqual({ storage: '#7d5ba6', no_touch: '#e0218a', push: '#ffffff', lot: '#f57c00' });
   const line = matchPairs(paint.line);
   expect(line).not.toBeNull();
   expect(line.pairs).toEqual(paint.table);            // every type, its own colour

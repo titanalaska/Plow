@@ -82,7 +82,7 @@ test('the shell caches the shift log files', () => {
   assert.ok(loaded.length > 10, 'found the page\'s script tags');
   for (const f of loaded) assert.ok(shell.includes(f), f + ' is loaded by index.html but not in the shell');
   // A new shell means a new cache name, or installed phones keep the old one.
-  assert.match(sw, /var CACHE_VERSION = 'titan-plow-shell-6';/);
+  assert.match(sw, /var CACHE_VERSION = 'titan-plow-shell-7';/);
 });
 
 // Plow Command has no MOA outlines (spec, 10/21/26): the sign-in carries every zone with its ring, so the kept copies

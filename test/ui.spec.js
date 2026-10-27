@@ -948,8 +948,8 @@ const mapZoneIds = (page) => page.evaluate(() => window.SnowMapView._snow.zones.
 
 // Plow Command (10/21/26): the legend reads the three kinds the map draws, in TYPES order, and the editor offers the
 // same three as buttons (Task 14): Pile, Keep clear, Push arrow. Each button's swatch is its kind's colour from the
-// map's own table (storage #7d5ba6, no_touch #e0218a, push #ffffff); the white arrow's carries its dark edge (#1a1a1a)
-// as well, or it would vanish on a white card.
+// map's own table (storage #7d5ba6, no_touch #e0218a, push #ffffff, lot #f57c00 since 10/26/26); the white arrow's
+// carries its dark edge (#1a1a1a) as well, or it would vanish on a white card.
 test('editor: three buttons, Pile, Keep clear and Push arrow, coloured from the map\'s table; the legend lists the same three', async ({ page }) => {
   await adminMap(page, mapWorld());
   expect(await page.locator('#maplegend span').allTextContents()).toEqual(
@@ -959,7 +959,7 @@ test('editor: three buttons, Pile, Keep clear and Push arrow, coloured from the 
   expect(await page.locator('[data-ztype]').evaluateAll((els) => els.map((e) => e.dataset.ztype + ':' + e.textContent))).toEqual(
     ['storage:Pile', 'no_touch:Keep clear', 'push:Push arrow', 'lot:Lot']);   // Lot (10/22/26) last, as in the legend
   expect(await page.locator('[data-ztype]').evaluateAll((els) => els.map((e) => [e.style.getPropertyValue('--zc'), e.style.getPropertyValue('--ze')]))).toEqual(
-    [['#7d5ba6', ''], ['#e0218a', ''], ['#ffffff', '#1a1a1a'], ['#2d6a2d', '']]);
+    [['#7d5ba6', ''], ['#e0218a', ''], ['#ffffff', '#1a1a1a'], ['#f57c00', '']]);   // the Lot button is the map's orange
   // Pressed, the arrow's button does not vanish: its fill differs from the card under it.
   await page.click('[data-ztype="push"]');
   await expect(page.locator('[data-ztype="push"]')).toHaveAttribute('aria-pressed', 'true');
@@ -1096,7 +1096,7 @@ test('map: a push arrow draws a white line and a head; a pile is purple; no walk
   expect(style.order).toEqual(['bg', 'esri', 'moa', 'lot-fill', 'lot-hatch', 'lot-line', 'zones-fill', 'zones-line', 'push-casing', 'push-line', 'push-head', 'push-head-line']);
   const AREAS = ['in', ['get', 'type'], ['literal', ['storage', 'no_touch']]];
   // The areas' colour is the kinds' own table: a pile (storage) is purple, #7d5ba6; anything else falls to grey.
-  const TABLE = ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#2d6a2d', '#888888'];
+  const TABLE = ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#f57c00', '#888888'];
   expect(style.layers['zones-fill']).toEqual({ type: 'fill', filter: AREAS, paint: { 'fill-color': TABLE } });
   expect(style.layers['zones-line']).toEqual({ type: 'line', filter: AREAS, paint: { 'line-color': TABLE } });
   expect(style.layers['push-casing']).toEqual({ type: 'line', filter: ['==', ['get', 'type'], 'push'], paint: { 'line-color': '#1a1a1a', 'line-width': 7 } });
@@ -1246,7 +1246,8 @@ test('map: a lot draws under the piles as a polygon with its island, and a tap o
     const m = window.SnowMapView, f = m.getSource('zones')._data.features.find((x) => x.properties.id === 'L1');
     const ids = m.getStyle().layers.map((l) => l.id);
     return { rings: f.geometry.coordinates.length, lotFill: ids.indexOf('lot-fill'), lotHatch: ids.indexOf('lot-hatch'), lotLine: ids.indexOf('lot-line'), zonesFill: ids.indexOf('zones-fill'),
-      pattern: m.getPaintProperty('lot-hatch', 'fill-pattern'), lineWidth: m.getPaintProperty('lot-line', 'line-width'), hasStripes: m.hasImage('lot-stripes') };
+      pattern: m.getPaintProperty('lot-hatch', 'fill-pattern'), lineWidth: m.getPaintProperty('lot-line', 'line-width'), hasStripes: m.hasImage('lot-stripes'),
+      lineColour: m.getPaintProperty('lot-line', 'line-color'), fillColour: m.getPaintProperty('lot-fill', 'fill-color'), fillOpacity: m.getPaintProperty('lot-fill', 'fill-opacity') };
   });
   expect(drawn.rings).toBe(2);                       // the lot and its island
   expect(drawn.lotFill).toBeGreaterThan(-1);
@@ -1256,6 +1257,11 @@ test('map: a lot draws under the piles as a polygon with its island, and a tap o
   expect(drawn.pattern).toBe('lot-stripes');
   expect(drawn.lineWidth).toBe(3);
   expect(drawn.hasStripes).toBe(true);                 // the tile was handed over when the style asked for it
+  // The lot is orange since 10/26/26 (Matt: the green blended with the landscaping on the 2024 aerial): the 3 px line
+  // and the tint under the stripes both wear the table's #f57c00, the tint at the same .15 as before.
+  expect(drawn.lineColour).toBe('#f57c00');
+  expect(drawn.fillColour).toBe('#f57c00');
+  expect(drawn.fillOpacity).toBe(0.15);
   await expect(page.locator('#maplegend')).toContainText('Lot');
   const pt = await page.evaluate(([lng, lat]) => { const p = window.SnowMapView.project([lng, lat]); const r = window.SnowMapView.getCanvas().getBoundingClientRect(); return { x: r.left + p.x, y: r.top + p.y }; },
     [PAC[0] - eastM(18), PAC[1] + northM(20)]);

@@ -112,6 +112,12 @@ look at zones. They do not change, and the identity test keeps them identical.
 plow green, the "match Bootprint" rule of 10/4/26). `AREAS` stays the two kinds that share the pile layers; the lot
 has its own filter.
 
+> **10/26/26: the lot is orange, `#f57c00`.** Matt, on the AHFC Chugach Manor & View lot over the 2024 aerial: the
+> green blends with the landscaping. He chose orange over blue and yellow. The hatch, the 3 px line, the tint (still
+> .15), the legend chip, the editor's Lot button and the import preview all carry it; the hatch tile's own RGBA
+> (245, 124, 0, 204) changed with it, and a node test now reads the hex back off a pixel and holds it to the table.
+> Piles, keep-clear and arrows unchanged. Shell 7.
+
 A lot draws **under** the piles and keep-clear areas, lighter than them: its own layers `lot-fill` (opacity
 0.15), `lot-hatch` (a 45° stripe tile, `lotStripes()`, 2 px lines 12 px apart in the same green at 80%, handed to
 MapLibre on `styleimagemissing`; Matt, 10/23/26, after the first real lot read too faint for the crew) and `lot-line`
@@ -229,7 +235,7 @@ traces and imports site by site; the first lot through the real import is the ac
 
 | # | Assumption | If wrong |
 |---|---|---|
-| A1 | Bootprint's plow green, light (15% fill, 2 px line), under the piles. | A colour or a weight: two numbers in `TYPES` and the layers. |
+| A1 | Bootprint's plow green, light (15% fill, 2 px line), under the piles. **Wrong, 10/26/26:** the green blended with the landscaping; orange `#f57c00` since shell 7. | A colour or a weight: two numbers in `TYPES` and the layers (and the hatch tile's RGBA, since 10/23/26). |
 | A2 | The line reads `Lot: 48,200 sq ft`, under the address, after the plow note. | Words or place: one helper, four call sites. |
 | A3 | A route's total is the sum over its live sites' lots; a site on two routes counts in both. | Count once across routes: not a route's number then. |
 | A4 | An island must be fully inside the lot; a driveway half in and half out is left out and named. | Exact overlap like Bootprint's: the clipping arithmetic comes across from Bootprint. |

@@ -17,13 +17,15 @@ test('outside MOA, Esri down, moaOk somehow true: still banner', () => assert.st
 // white line with a dark edge. The lot itself has no polygon (the aerial is the lot), and the Shovel crew's
 // sidewalk, hand and heated are gone. Key order is the legend's order.
 const SnowMap = require('../lib/mapview.js');
-// Lot outlines (10/22/26): a fourth kind, the lot itself, last, in Bootprint's plow green (the "match Bootprint" rule).
+// Lot outlines (10/22/26): a fourth kind, the lot itself, last. It was Bootprint's plow green (#2d6a2d) until 10/26/26,
+// when Matt, looking at the AHFC Chugach Manor & View lot on the 2024 aerial, said the green blends with the landscaping
+// and chose orange (over blue and yellow): #f57c00, which reads over asphalt, lawn and snow alike.
 test('TYPES: storage, no_touch, push, lot, in that order, with their colours and labels', () => {
   assert.deepStrictEqual(SnowMap.TYPES, {
     storage: { color: '#7d5ba6', label: 'Snow storage' },
     no_touch: { color: '#e0218a', label: 'Keep clear' },
     push: { color: '#ffffff', edge: '#1a1a1a', label: 'Push snow this way' },
-    lot: { color: '#2d6a2d', label: 'Lot' },
+    lot: { color: '#f57c00', label: 'Lot' },
   });
   assert.deepStrictEqual(Object.keys(SnowMap.TYPES), ['storage', 'no_touch', 'push', 'lot']);
 });
@@ -38,13 +40,13 @@ test('the legend: four rows in TYPES order, the arrow\'s white swatch edged dark
   assert.match(swatches[1], /background:#e0218a/);
   assert.match(swatches[2], /background:#ffffff/);
   assert.match(swatches[2], /#1a1a1a/);                 // the edge colour, on the push row only
-  assert.match(swatches[3], /background:#2d6a2d/);
+  assert.match(swatches[3], /background:#f57c00/);   // the lot's chip, orange since 10/26/26
   assert.doesNotMatch(swatches[0] + swatches[1] + swatches[3], /#1a1a1a/);
 });
 
 test('the colour expression names the four kinds and only them, grey for anything else', () => {
   assert.deepStrictEqual(SnowMap.typeColour('#888888'),
-    ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#2d6a2d', '#888888']);
+    ['match', ['get', 'type'], 'storage', '#7d5ba6', 'no_touch', '#e0218a', 'push', '#ffffff', 'lot', '#f57c00', '#888888']);
 });
 
 // ---- the arrow's head ----
@@ -328,23 +330,28 @@ test('zoneDistance: a lot is 0 in its body, the hole\'s edge distance inside an 
 });
 
 // ---- the lot's hatch (Matt, 10/23/26: "put some striped lines across it … when everybody else starts looking at this") ----
-// A 12 x 12 tile for MapLibre's fill-pattern: a 45-degree stripe 2 px wide in the lot's green, the rest clear, so the
+// A 12 x 12 tile for MapLibre's fill-pattern: a 45-degree stripe 2 px wide in the lot's colour, the rest clear, so the
 // stripes repeat every 12 px and the aerial shows between them. Worked by hand: the stripe is every pixel where
 // (x - y) mod 12 is 0 or 1 (the two diagonals x = y and x = y + 1, wrapping), so 2 pixels on each of 12 rows = 24 opaque
-// pixels of 144; each opaque pixel is #2d6a2d (45, 106, 45) at alpha 204 (80%); every other pixel is fully clear.
-test('lotStripes: a 12 x 12 RGBA tile with a 2 px diagonal stripe of the lot\'s green, 24 opaque pixels, clear elsewhere', () => {
+// pixels of 144; each opaque pixel is the lot's orange #f57c00 (10/26/26; f5 = 15 x 16 + 5 = 245, 7c = 7 x 16 + 12 = 124,
+// 00 = 0, so (245, 124, 0)) at alpha 204 (80%); every other pixel is fully clear. The tile is built from its own numbers,
+// not from TYPES, so the last assertion reads the hex back off the pixel and holds it to the table: the stripes and the
+// 3 px line can never drift apart (the green-to-orange change of 10/26/26 had to land in both).
+test('lotStripes: a 12 x 12 RGBA tile with a 2 px diagonal stripe of the lot\'s orange, 24 opaque pixels, clear elsewhere, the same colour as TYPES.lot', () => {
   const t = SnowMap.lotStripes();
   assert.deepStrictEqual([t.width, t.height, t.data.length], [12, 12, 12 * 12 * 4]);
   const px = (x, y) => Array.from(t.data.slice((y * 12 + x) * 4, (y * 12 + x) * 4 + 4));
   let opaque = 0;
   for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
     const p = px(x, y), on = ((x - y) % 12 + 12) % 12 <= 1;
-    if (on) { opaque++; assert.deepStrictEqual(p, [45, 106, 45, 204], 'stripe pixel ' + x + ',' + y); }
+    if (on) { opaque++; assert.deepStrictEqual(p, [245, 124, 0, 204], 'stripe pixel ' + x + ',' + y); }
     else assert.strictEqual(p[3], 0, 'clear pixel ' + x + ',' + y);
   }
   assert.strictEqual(opaque, 24);
-  assert.deepStrictEqual(px(0, 0), [45, 106, 45, 204]);
+  assert.deepStrictEqual(px(0, 0), [245, 124, 0, 204]);
   assert.strictEqual(px(6, 0)[3], 0);
-  assert.deepStrictEqual(px(11, 10), [45, 106, 45, 204]);   // x - y = 1
-  assert.deepStrictEqual(px(0, 11), [45, 106, 45, 204]);    // x - y = -11, which wraps to 1
+  assert.deepStrictEqual(px(11, 10), [245, 124, 0, 204]);   // x - y = 1
+  assert.deepStrictEqual(px(0, 11), [245, 124, 0, 204]);    // x - y = -11, which wraps to 1
+  const hex = '#' + px(0, 0).slice(0, 3).map((n) => n.toString(16).padStart(2, '0')).join('');
+  assert.strictEqual(hex, SnowMap.TYPES.lot.color);          // the hatch is the line's colour, read back off a pixel
 });
